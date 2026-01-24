@@ -61,10 +61,6 @@ public class Product {
     @Column(name = "specs", columnDefinition = "json")
     private JsonNode specs;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "compatibility_tags", columnDefinition = "json")
-    private JsonNode compatibilityTags;
-
     @Column(name = "thumbnail")
     private String thumbnail;
 
