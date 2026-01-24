@@ -79,9 +79,6 @@ public class Product {
     private List<ProductImage> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<BuildItem> buildItems = new ArrayList<>();
-
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<CartItem> cartItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
