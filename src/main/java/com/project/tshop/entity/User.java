@@ -67,10 +67,6 @@ public class User implements UserDetails {
 
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private List<Build> builds = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Order> orders = new ArrayList<>();
 
     @Builder.Default
