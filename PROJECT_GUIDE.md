@@ -5,14 +5,14 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 ## 1) Tong quan nhanh
 - Tshop la backend Spring Boot (Java 17) cho mo hinh thuong mai dien tu co ban.
 - Su dung PostgreSQL, Spring Data JPA, Spring Security (JWT), Validation, Lombok.
-- Hien tai API tap trung vao phan auth (dang ky, dang nhap, refresh token). Cac entity khac la mo hinh du lieu, chua co controller/service tuong ung.
+- Hien tai co API auth va CRUD cho Category. Cac entity khac la mo hinh du lieu, chua co controller/service tuong ung.
 
 ## 2) Tech stack va phu thuoc chinh
 - Spring Boot 4.0.1
 - Spring WebMVC, Spring Security, Spring Validation
 - Spring Data JPA + PostgreSQL
 - JWT (io.jsonwebtoken)
-- Lombok (Builder, Getter/Setter, v.v.)
+- Lombok (Builder, v.v.)
 
 ## 3) Kien truc va design patterns
 ### Layered Architecture
@@ -55,6 +55,25 @@ Flow:
 ### Response wrapper
 `ApiResponse<T>` dong goi response theo format: `success`, `message`, `data`, `timestamp`.
 
+### Category CRUD
+File: `controller/CategoryController.java`
+- `POST /api/categories` -> tao category
+- `PUT /api/categories/{id}` -> cap nhat category
+- `DELETE /api/categories/{id}` -> xoa category
+- `GET /api/categories/{id}` -> xem chi tiet category
+- `GET /api/categories?search=&page=0&size=10` -> danh sach + tim kiem
+
+**Paging mac dinh**: `page=0`, `size=10` va size duoc gioi han toi da 10.
+
+**Behavior cap nhat (update)**:
+- Field nao khong gui (null) thi giu nguyen gia tri cu.
+- `name`: chi update khi khong null va khong blank.
+- `slug`:
+  - Neu gui slug rong/blank -> set `null`.
+  - Neu `name` thay doi -> slug tu dong sinh lai tu `name`.
+  - Neu `name` khong doi -> slug duoc resolve tu slug request (neu co) hoac tu `name` (neu khong co).
+- `parentId`: neu khong gui -> giu nguyen. Parent khong duoc la chinh no va phai ton tai.
+
 ## 5) Mo hinh du lieu (entities) va quan he
 ### User
 - Truong: email, passwordHash, role (customer/admin), fullName, phone
@@ -82,7 +101,7 @@ Flow:
 ### ProductImage
 - Luu `object_key` (key tren object storage). Hien chua co service upload/download.
 
-## 6) Cấu hinh va bien moi truong
+## 6) Cau hinh va bien moi truong
 `application.properties`:
 - Doc `.env` qua `spring.config.import=optional:file:./.env[.properties]`
 - Cau hinh DB tu `POSTGRES_*`
