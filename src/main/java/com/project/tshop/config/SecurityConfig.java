@@ -3,7 +3,6 @@ package com.project.tshop.config;
 import com.project.tshop.repository.UserRepository;
 import com.project.tshop.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

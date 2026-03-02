@@ -74,6 +74,15 @@ File: `controller/CategoryController.java`
   - Neu `name` khong doi -> slug duoc resolve tu slug request (neu co) hoac tu `name` (neu khong co).
 - `parentId`: neu khong gui -> giu nguyen. Parent khong duoc la chinh no va phai ton tai.
 
+### Data initialization
+File: `config/DataInitializer.java`
+- Khi app start, he thong seed 3 tai khoan mac dinh neu chua ton tai theo email.
+- Tai khoan:
+  - admin: `admin@tshop.local` / `Admin@123` / role `admin`
+  - customer 1: `customer1@tshop.local` / `Customer@123` / role `customer`
+  - customer 2: `customer2@tshop.local` / `Customer@123` / role `customer`
+- Co check `existsByEmail(...)` truoc khi insert nen restart app khong tao du lieu trung.
+
 ## 5) Mo hinh du lieu (entities) va quan he
 ### User
 - Truong: email, passwordHash, role (customer/admin), fullName, phone
@@ -114,7 +123,10 @@ File: `controller/CategoryController.java`
 - Headers: `*`, expose header `Authorization`, `allowCredentials=true`.
 - Co permit `OPTIONS /**` de preflight request di qua Spring Security.
 
-**Luu y quan trong**: `JwtService` dung `Decoders.BASE64.decode(secretKey)`, vi vay `JWT_SECRET` phai la chuoi Base64 hop le (toi thieu 256-bit cho HS256).
+**Luu y quan trong**: `JwtService` ho tro 2 kieu `JWT_SECRET`:
+- Base64 hop le (uu tien su dung neu decode duoc va >= 32 bytes).
+- Plain text (neu >= 32 bytes thi dung truc tiep, neu ngan hon se duoc bam SHA-256 de dat 32 bytes cho HS256).
+- Neu secret rong, he thong throw `InvalidJwtSecretException`.
 
 Goi y tao JWT secret (PowerShell):
 ```
@@ -152,6 +164,8 @@ Neu dung Maven thuong:
 ```
 mvn spring-boot:run
 ```
+
+Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data initialization`.
 
 ## 8) Diem can biet khi mo rong
 - Hien tai chua co controller/service cho Product, Cart, Order, Review.
