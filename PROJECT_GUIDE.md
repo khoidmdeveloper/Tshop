@@ -43,14 +43,26 @@ File: `controller/AuthenticationController.java`
 - `POST /api/auth/register` -> tao user, tra ve access + refresh token.
 - `POST /api/auth/login` -> xac thuc, tra ve token.
 - `POST /api/auth/refresh` -> tao access token moi tu refresh token.
+- `POST /api/auth/logout` -> revoke refresh token hien tai.
 
 Flow:
 1. Controller nhan DTO va validate.
 2. `AuthenticationService`:
    - `register`: check email, ma hoa password (BCrypt), luu user, tao token.
    - `login`: authenticate qua `AuthenticationManager`, tao token.
-   - `refreshToken`: validate refresh token, tao access token moi.
+   - `refreshToken`: validate refresh token (bao gom check revoke), tao access token moi.
+   - `logout`: hash refresh token va luu vao bang revoke.
 3. `JwtService` tao/kiem tra token voi HS256.
+
+AuthResponse tra ve:
+- `access_token`, `refresh_token`, `token_type`
+- `email`, `full_name`, `phone`, `role`
+
+Custom exceptions trong auth:
+- `EmailAlreadyExistsException` (409)
+- `UserNotFoundException` (404)
+- `InvalidRefreshTokenException` (401)
+- `RefreshTokenRevokedException` (401)
 
 ### Response wrapper
 `ApiResponse<T>` dong goi response theo format: `success`, `message`, `data`, `timestamp`.
@@ -127,6 +139,10 @@ File: `config/DataInitializer.java`
 ### ProductImage
 - Luu `object_key` (key tren object storage). Hien chua co service upload/download.
 
+### RevokedRefreshToken
+- Luu hash cua refresh token da logout (`token_hash`) de chan refresh token do.
+- Co `expires_at` de cleanup token revoke het han.
+
 ## 6) Cau hinh va bien moi truong
 `application.properties`:
 - Doc `.env` qua `spring.config.import=optional:file:./.env[.properties]`
@@ -186,6 +202,7 @@ Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data 
 
 ## 8) Diem can biet khi mo rong
 - Hien tai chua co controller/service cho Product, Cart, Order, Review.
+- Auth da dung custom exception theo use-case; hien van chua co Global Exception Handler de thong nhat error envelope.
 - Chua co Global Exception Handler (response loi se theo mac dinh Spring).
 - `Product.specs` dung JSON column trong Postgres (JPA JSON mapping).
 - `ProductImage.objectKey` goi y luu key file tren MinIO/ S3, can viet service upload.

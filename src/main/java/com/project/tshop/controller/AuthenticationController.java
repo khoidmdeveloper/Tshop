@@ -2,6 +2,7 @@ package com.project.tshop.controller;
 
 import com.project.tshop.dto.auth.AuthResponse;
 import com.project.tshop.dto.auth.LoginRequest;
+import com.project.tshop.dto.auth.LogoutRequest;
 import com.project.tshop.dto.auth.RefreshTokenRequest;
 import com.project.tshop.dto.auth.RegisterRequest;
 import com.project.tshop.dto.response.ApiResponse;
@@ -37,5 +38,11 @@ public class AuthenticationController {
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse authResponse = authenticationService.refreshToken(request);
         return ResponseEntity.ok(ApiResponse.success(authResponse, "Làm mới token thành công"));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request) {
+        authenticationService.logout(request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đăng xuất thành công"));
     }
 }
