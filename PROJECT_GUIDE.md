@@ -107,6 +107,13 @@ File: `controller/CategoryController.java`
 - Cau hinh DB tu `POSTGRES_*`
 - JWT tu `JWT_SECRET`, `jwt.access-token-expiration`, `jwt.refresh-token-expiration`
 
+### CORS (SecurityConfig)
+- Backend bat CORS thong qua `CorsConfigurationSource` trong `SecurityConfig`.
+- Dang dung `allowedOriginPatterns("*")` (cho frontend nao cung duoc), phu hop cho du an nho/dev.
+- Methods cho phep: `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
+- Headers: `*`, expose header `Authorization`, `allowCredentials=true`.
+- Co permit `OPTIONS /**` de preflight request di qua Spring Security.
+
 **Luu y quan trong**: `JwtService` dung `Decoders.BASE64.decode(secretKey)`, vi vay `JWT_SECRET` phai la chuoi Base64 hop le (toi thieu 256-bit cho HS256).
 
 Goi y tao JWT secret (PowerShell):
