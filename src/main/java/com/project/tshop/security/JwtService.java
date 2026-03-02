@@ -1,7 +1,9 @@
 package com.project.tshop.security;
 
+import com.project.tshop.exception.InvalidJwtSecretException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,7 +84,34 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = resolveSigningKeyBytes(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private byte[] resolveSigningKeyBytes(String configuredSecret) {
+        String secret = configuredSecret == null ? "" : configuredSecret.trim();
+        if (secret.isEmpty()) {
+            throw new InvalidJwtSecretException("JWT secret must not be empty");
+        }
+
+        try {
+            byte[] decoded = Decoders.BASE64.decode(secret);
+            if (decoded.length >= 32) {
+                return decoded;
+            }
+        } catch (DecodingException ignored) {
+            // Fallback to plain text handling below when secret is not valid Base64.
+        }
+
+        byte[] rawBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (rawBytes.length >= 32) {
+            return rawBytes;
+        }
+
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(rawBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new InvalidJwtSecretException("Unable to initialize SHA-256 for JWT key derivation", e);
+        }
     }
 }

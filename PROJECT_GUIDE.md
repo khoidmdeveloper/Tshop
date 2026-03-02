@@ -123,7 +123,10 @@ File: `config/DataInitializer.java`
 - Headers: `*`, expose header `Authorization`, `allowCredentials=true`.
 - Co permit `OPTIONS /**` de preflight request di qua Spring Security.
 
-**Luu y quan trong**: `JwtService` dung `Decoders.BASE64.decode(secretKey)`, vi vay `JWT_SECRET` phai la chuoi Base64 hop le (toi thieu 256-bit cho HS256).
+**Luu y quan trong**: `JwtService` ho tro 2 kieu `JWT_SECRET`:
+- Base64 hop le (uu tien su dung neu decode duoc va >= 32 bytes).
+- Plain text (neu >= 32 bytes thi dung truc tiep, neu ngan hon se duoc bam SHA-256 de dat 32 bytes cho HS256).
+- Neu secret rong, he thong throw `InvalidJwtSecretException`.
 
 Goi y tao JWT secret (PowerShell):
 ```
