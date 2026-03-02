@@ -42,6 +42,8 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             """)
     Optional<CategoryResponse> findResponseBySlug(@Param("slug") String slug);
 
+    Optional<Category> findFirstBySlug(String slug);
+
     @Query("""
             select new com.project.tshop.dto.category.CategoryResponse(
                 c.id,
