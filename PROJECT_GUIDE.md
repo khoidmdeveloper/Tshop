@@ -5,7 +5,7 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 ## 1) Tong quan nhanh
 - Tshop la backend Spring Boot (Java 17) cho mo hinh thuong mai dien tu co ban.
 - Su dung PostgreSQL, Spring Data JPA, Spring Security (JWT), Validation, Lombok.
-- Hien tai co API auth va CRUD cho Category. Cac entity khac la mo hinh du lieu, chua co controller/service tuong ung.
+- Hien tai co API auth, profile (get/update), va CRUD cho Category. Cac domain khac nhu Product/Cart/Order/Review chua co controller/service day du.
 
 ## 2) Tech stack va phu thuoc chinh
 - Spring Boot 4.0.1
@@ -23,10 +23,10 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 - `security/`: JWT service + filter, SecurityConfig.
 
 ### Repository Pattern (Spring Data JPA)
-`UserRepository` ke thua `JpaRepository`, dong vai tro truy van DB cho User.
+`UserRepository`, `CategoryRepository`, `OrderRepository` ke thua `JpaRepository`, dong vai tro truy van DB.
 
 ### DTO Pattern
-`dto/auth/*` gom cac request/response cho auth, duoc validate bang annotation (`@NotBlank`, `@Email`, `@Size`).
+`dto/auth/*`, `dto/profile/*`, `dto/category/*` gom request/response theo tung use-case, validate bang annotation (`@NotBlank`, `@Email`, `@Size`).
 
 ### Builder Pattern (Lombok)
 `User`, `AuthResponse`, `RegisterRequest`, v.v. su dung `@Builder` de khoi tao object ro rang.
@@ -54,6 +54,23 @@ Flow:
 
 ### Response wrapper
 `ApiResponse<T>` dong goi response theo format: `success`, `message`, `data`, `timestamp`.
+
+### Profile API (Current user)
+Files: `controller/ProfileController.java`, `service/ProfileService.java`
+- `GET /api/profile` -> lay profile cua user dang dang nhap.
+- `PUT /api/profile` -> cap nhat profile cua user dang dang nhap.
+
+Response profile hien tai gom:
+- `firstName`, `lastName`, `email`, `phone`
+- `address`, `city`, `state`
+- `memberSince`, `totalOrders`, `totalSpent`
+
+Behavior update profile:
+- Partial update: field nao gui len thi moi xu ly field do.
+- Validate email format + unique email neu thay doi email.
+- Chuan hoa du lieu text (`trim`, bo khoang trang du).
+- Toi uu no-op: neu khong co thay doi thuc te thi khong `save` vao DB.
+- Khong su dung truong `zip` trong profile.
 
 ### Category CRUD
 File: `controller/CategoryController.java`
@@ -85,7 +102,7 @@ File: `config/DataInitializer.java`
 
 ## 5) Mo hinh du lieu (entities) va quan he
 ### User
-- Truong: email, passwordHash, role (customer/admin), fullName, phone
+- Truong: email, passwordHash, role (customer/admin), fullName, phone, address, city, state
 - Quan he: 1-1 Cart, 1-n Order, 1-n Review
 - Implement `UserDetails` de tich hop Spring Security
 
