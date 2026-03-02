@@ -105,12 +105,15 @@ File: `controller/CategoryController.java`
 
 ### Data initialization
 File: `config/DataInitializer.java`
-- Khi app start, he thong seed 3 tai khoan mac dinh neu chua ton tai theo email.
+- Khi app start, he thong seed du lieu mac dinh theo co che idempotent (chi tao ban ghi chua ton tai).
 - Tai khoan:
   - admin: `admin@tshop.local` / `Admin@123` / role `admin`
   - customer 1: `customer1@tshop.local` / `Customer@123` / role `customer`
   - customer 2: `customer2@tshop.local` / `Customer@123` / role `customer`
-- Co check `existsByEmail(...)` truoc khi insert nen restart app khong tao du lieu trung.
+- Category: seed 8 loai (`cpu`, `gpu`, `motherboard`, `ram`, `storage`, `psu`, `case`, `cooler`).
+- Product: seed 24 san pham, moi loai 3 san pham, status `active`.
+- Product image: moi product seed 3 anh vao bang `product_images` (URL online), dong thoi `products.thumbnail` cung dung URL online.
+- Co check unique key theo `email` (user) va `slug` (category/product) nen restart app khong tao du lieu trung.
 
 ## 5) Mo hinh du lieu (entities) va quan he
 ### User
