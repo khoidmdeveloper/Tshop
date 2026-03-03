@@ -5,7 +5,8 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 ## 1) Tong quan nhanh
 - Tshop la backend Spring Boot (Java 17) cho mo hinh thuong mai dien tu co ban.
 - Su dung PostgreSQL, Spring Data JPA, Spring Security (JWT), Validation, Lombok.
-- Hien tai co API auth, profile (get/update), va CRUD cho Category. Cac domain khac nhu Product/Cart/Order/Review chua co controller/service day du.
+- Hien tai co API auth, profile (get/update), CRUD cho Category, va API doc san pham (list/detail).
+- Cac domain Cart/Order/Review chua co controller/service day du.
 
 ## 2) Tech stack va phu thuoc chinh
 - Spring Boot 4.0.1
@@ -23,10 +24,10 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 - `security/`: JWT service + filter, SecurityConfig.
 
 ### Repository Pattern (Spring Data JPA)
-`UserRepository`, `CategoryRepository`, `OrderRepository` ke thua `JpaRepository`, dong vai tro truy van DB.
+`UserRepository`, `CategoryRepository`, `ProductRepository`, `ProductImageRepository`, `OrderRepository` ke thua `JpaRepository`, dong vai tro truy van DB.
 
 ### DTO Pattern
-`dto/auth/*`, `dto/profile/*`, `dto/category/*` gom request/response theo tung use-case, validate bang annotation (`@NotBlank`, `@Email`, `@Size`).
+`dto/auth/*`, `dto/profile/*`, `dto/category/*`, `dto/product/*` gom request/response theo tung use-case, validate bang annotation (`@NotBlank`, `@Email`, `@Size`).
 
 ### Builder Pattern (Lombok)
 `User`, `AuthResponse`, `RegisterRequest`, v.v. su dung `@Builder` de khoi tao object ro rang.
@@ -103,6 +104,21 @@ File: `controller/CategoryController.java`
   - Neu `name` khong doi -> slug duoc resolve tu slug request (neu co) hoac tu `name` (neu khong co).
 - `parentId`: neu khong gui -> giu nguyen. Parent khong duoc la chinh no va phai ton tai.
 
+### Product Browse API
+Files: `controller/ProductController.java`, `service/ProductService.java`
+- `GET /api/products?search=&category=&page=0&size=24` -> danh sach san pham co phan trang.
+- `GET /api/products/{id}` -> chi tiet san pham.
+
+List response item gom:
+- `id`, `name`, `slug`, `price`, `stockQuantity`
+- `thumbnail`
+- `categoryName`, `categorySlug`
+
+Detail response gom:
+- Cac field list item + `description`, `status`, `categoryId`
+- `images[]` (url, altText, sortOrder), sap xep theo `sortOrder` tang dan.
+- Neu product chua co image trong `product_images`, service fallback 1 anh tu `thumbnail`.
+
 ### Data initialization
 File: `config/DataInitializer.java`
 - Khi app start, he thong seed du lieu mac dinh theo co che idempotent (chi tao ban ghi chua ton tai).
@@ -111,8 +127,8 @@ File: `config/DataInitializer.java`
   - customer 1: `customer1@tshop.local` / `Customer@123` / role `customer`
   - customer 2: `customer2@tshop.local` / `Customer@123` / role `customer`
 - Category: seed 8 loai (`cpu`, `gpu`, `motherboard`, `ram`, `storage`, `psu`, `case`, `cooler`).
-- Product: seed 24 san pham, moi loai 3 san pham, status `active`.
-- Product image: moi product seed 3 anh vao bang `product_images` (URL online), dong thoi `products.thumbnail` cung dung URL online.
+- Product: seed mau theo danh sach trong code (`PRODUCT_SEEDS`), status `active`.
+- Product image: moi product seed 1 anh vao bang `product_images` (URL online), dong thoi `products.thumbnail` cung dung URL online.
 - Co check unique key theo `email` (user) va `slug` (category/product) nen restart app khong tao du lieu trung.
 
 ## 5) Mo hinh du lieu (entities) va quan he
@@ -158,6 +174,7 @@ File: `config/DataInitializer.java`
 - Methods cho phep: `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 - Headers: `*`, expose header `Authorization`, `allowCredentials=true`.
 - Co permit `OPTIONS /**` de preflight request di qua Spring Security.
+- Security rule hien tai cho phep public `GET /api/products/**` de FE co the browse san pham truoc khi dang nhap.
 
 **Luu y quan trong**: `JwtService` ho tro 2 kieu `JWT_SECRET`:
 - Base64 hop le (uu tien su dung neu decode duoc va >= 32 bytes).
@@ -204,7 +221,8 @@ mvn spring-boot:run
 Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data initialization`.
 
 ## 8) Diem can biet khi mo rong
-- Hien tai chua co controller/service cho Product, Cart, Order, Review.
+- Hien tai da co API doc Product, nhung chua co API ghi Product (create/update/delete).
+- Chua co controller/service cho Cart, Order, Review.
 - Auth da dung custom exception theo use-case; hien van chua co Global Exception Handler de thong nhat error envelope.
 - Chua co Global Exception Handler (response loi se theo mac dinh Spring).
 - `Product.specs` dung JSON column trong Postgres (JPA JSON mapping).
