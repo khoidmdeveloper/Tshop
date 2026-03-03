@@ -27,4 +27,21 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, UUID
             order by pi.sortOrder asc, pi.createdAt asc
             """)
     List<ProductImageResponse> findResponsesByProductId(@Param("productId") UUID productId);
+
+    @Query("""
+            select pi.id as id, pi.objectKey as value
+            from ProductImage pi
+            where pi.objectKey is not null and trim(pi.objectKey) <> ''
+            """)
+    List<ProductImagePathView> findAllObjectKeyValues();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update ProductImage pi set pi.objectKey = :objectKey where pi.id = :id")
+    int updateObjectKeyById(@Param("id") UUID id, @Param("objectKey") String objectKey);
+
+    interface ProductImagePathView {
+        UUID getId();
+
+        String getValue();
+    }
 }

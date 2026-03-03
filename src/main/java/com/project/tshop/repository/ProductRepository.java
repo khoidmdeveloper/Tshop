@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
@@ -65,7 +66,44 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             """)
     Optional<ProductDetailResponse> findDetailById(@Param("id") UUID id);
 
+    @Query("""
+            select new com.project.tshop.dto.product.ProductDetailResponse(
+                p.id,
+                p.name,
+                p.slug,
+                p.price,
+                p.stockQuantity,
+                p.description,
+                p.thumbnail,
+                c.id,
+                c.name,
+                c.slug,
+                p.status
+            )
+            from Product p
+            left join p.category c
+            where p.slug = :slug
+            """)
+    Optional<ProductDetailResponse> findDetailBySlug(@Param("slug") String slug);
+
     @Modifying
     @Query("update Product p set p.thumbnail = :thumbnail where p.slug = :slug")
     void updateThumbnailBySlug(@Param("slug") String slug, @Param("thumbnail") String thumbnail);
+
+    @Query("""
+            select p.id as id, p.thumbnail as value
+            from Product p
+            where p.thumbnail is not null and trim(p.thumbnail) <> ''
+            """)
+    List<ProductPathView> findAllThumbnailValues();
+
+    @Modifying
+    @Query("update Product p set p.thumbnail = :thumbnail where p.id = :id")
+    int updateThumbnailById(@Param("id") UUID id, @Param("thumbnail") String thumbnail);
+
+    interface ProductPathView {
+        UUID getId();
+
+        String getValue();
+    }
 }
