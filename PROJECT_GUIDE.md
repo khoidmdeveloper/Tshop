@@ -5,7 +5,7 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 ## 1) Tong quan nhanh
 - Tshop la backend Spring Boot (Java 17) cho mo hinh thuong mai dien tu co ban.
 - Su dung PostgreSQL, Spring Data JPA, Spring Security (JWT), Validation, Lombok.
-- Hien tai co API auth, profile (get/update), CRUD cho Category, va API doc san pham (list/detail).
+- Hien tai co API auth, profile (get/update), CRUD cho Category, va Product API (list/detail/create co upload anh).
 - Cac domain Cart/Order/Review chua co controller/service day du.
 
 ## 2) Tech stack va phu thuoc chinh
@@ -104,10 +104,11 @@ File: `controller/CategoryController.java`
   - Neu `name` khong doi -> slug duoc resolve tu slug request (neu co) hoac tu `name` (neu khong co).
 - `parentId`: neu khong gui -> giu nguyen. Parent khong duoc la chinh no va phai ton tai.
 
-### Product Browse API
+### Product API
 Files: `controller/ProductController.java`, `service/ProductService.java`
 - `GET /api/products?search=&category=&page=0&size=24` -> danh sach san pham co phan trang.
 - `GET /api/products/{id}` -> chi tiet san pham.
+- `POST /api/products` (`multipart/form-data`, role `ADMIN`) -> tao san pham moi voi anh.
 
 List response item gom:
 - `id`, `name`, `slug`, `price`, `stockQuantity`
@@ -118,6 +119,16 @@ Detail response gom:
 - Cac field list item + `description`, `status`, `categoryId`
 - `images[]` (url, altText, sortOrder), sap xep theo `sortOrder` tang dan.
 - Neu product chua co image trong `product_images`, service fallback 1 anh tu `thumbnail`.
+
+Create request (`POST /api/products`) gom:
+- `payload` (JSON): `categoryId`, `name`, `slug?`, `price`, `stockQuantity`, `description?`, `status?`
+- `thumbnail` (file anh, bat buoc)
+- `images` (danh sach file anh, tuy chon, toi da 10 file)
+
+Behavior upload:
+- BE chi chap nhan file anh hop le (MIME `image/*` va decode duoc bang `ImageIO`).
+- Anh duoc upload len MinIO, sau do DB luu URL public day du cho `products.thumbnail` va `product_images.object_key`.
+- Neu tao product loi sau khi upload mot phan, he thong xoa file da upload theo co che best-effort rollback.
 
 ### Data initialization
 File: `config/DataInitializer.java`
@@ -156,7 +167,7 @@ File: `config/DataInitializer.java`
 - Review gan User + Product, co rating/comment
 
 ### ProductImage
-- Luu `object_key` (key tren object storage). Hien chua co service upload/download.
+- Cot `object_key` dang duoc dung de luu URL public anh (tuong thich du lieu URL online va MinIO URL).
 
 ### RevokedRefreshToken
 - Luu hash cua refresh token da logout (`token_hash`) de chan refresh token do.
@@ -167,6 +178,9 @@ File: `config/DataInitializer.java`
 - Doc `.env` qua `spring.config.import=optional:file:./.env[.properties]`
 - Cau hinh DB tu `POSTGRES_*`
 - JWT tu `JWT_SECRET`, `jwt.access-token-expiration`, `jwt.refresh-token-expiration`
+- Multipart upload: `spring.servlet.multipart.max-file-size=10MB`, `spring.servlet.multipart.max-request-size=50MB`
+- MinIO: `MINIO_ENDPOINT`, `MINIO_BUCKET`, `MINIO_PUBLIC_BASE_URL`
+- Tuy chon override credential MinIO: `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` (neu khong set thi fallback qua `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`)
 
 ### CORS (SecurityConfig)
 - Backend bat CORS thong qua `CorsConfigurationSource` trong `SecurityConfig`.
@@ -221,14 +235,14 @@ mvn spring-boot:run
 Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data initialization`.
 
 ## 8) Diem can biet khi mo rong
-- Hien tai da co API doc Product, nhung chua co API ghi Product (create/update/delete).
+- Product da co `create` voi upload anh; `update/delete` chua duoc implement.
 - Chua co controller/service cho Cart, Order, Review.
 - Auth da dung custom exception theo use-case; hien van chua co Global Exception Handler de thong nhat error envelope.
 - Chua co Global Exception Handler (response loi se theo mac dinh Spring).
 - `Product.specs` dung JSON column trong Postgres (JPA JSON mapping).
-- `ProductImage.objectKey` goi y luu key file tren MinIO/ S3, can viet service upload.
+- Da co `MinioStorageService` de upload/xoa/resolve public URL.
 
 ## 9) Dinh huong them (goi y cho team)
 - Them `@RestControllerAdvice` de thong nhat format loi.
-- Them services/ controllers cho product, cart, order.
-- Them config cho MinIO (S3 client) va service luu file anh.
+- Them API `update/delete` cho product va dong bo luong xoa anh tren MinIO.
+- Toi uu quan ly MinIO bucket policy theo moi truong (dev/staging/prod) va bo sung luong xoa file theo lifecycle.
