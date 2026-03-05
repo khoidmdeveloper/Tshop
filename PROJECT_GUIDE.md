@@ -35,6 +35,11 @@ Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kie
 ### Security Filter Chain
 `JwtAuthenticationFilter` (OncePerRequestFilter) doc header `Authorization: Bearer ...`, xac thuc token va dat `SecurityContext`.
 
+Token validation behavior (cap nhat):
+- Neu access token het han/khong hop le, filter khong throw ra `500` nua; request duoc mark loi auth de Spring Security xu ly.
+- `RestAuthenticationEntryPoint` tra `401` theo format `ApiResponse` (vi du: "Access token expired.", "Invalid access token.").
+- `RestAccessDeniedHandler` tra `403` theo format `ApiResponse` khi user da xac thuc nhung khong du quyen.
+
 ### Domain Validation (Entity hooks)
 `ValueValidation.requireOneOf(...)` duoc goi trong `@PrePersist`/`@PreUpdate` cua `User`, `Product`, `Order` de rang buoc gia tri status/role.
 
@@ -58,6 +63,10 @@ Flow:
 AuthResponse tra ve:
 - `access_token`, `refresh_token`, `token_type`
 - `email`, `full_name`, `phone`, `role`
+
+Token lifetime mac dinh (xem `application.properties`):
+- `jwt.access-token-expiration=60000` (1 phut)
+- `jwt.refresh-token-expiration=604800000` (7 ngay)
 
 Custom exceptions trong auth:
 - `EmailAlreadyExistsException` (409)
@@ -178,6 +187,7 @@ File: `config/DataInitializer.java`
 - Doc `.env` qua `spring.config.import=optional:file:./.env[.properties]`
 - Cau hinh DB tu `POSTGRES_*`
 - JWT tu `JWT_SECRET`, `jwt.access-token-expiration`, `jwt.refresh-token-expiration`
+  - Mac dinh hien tai: access token `60000ms` (1 phut), refresh token `604800000ms` (7 ngay)
 - Multipart upload: `spring.servlet.multipart.max-file-size=10MB`, `spring.servlet.multipart.max-request-size=50MB`
 - MinIO: `MINIO_ENDPOINT`, `MINIO_BUCKET`, `MINIO_PUBLIC_BASE_URL`
 - Tuy chon override credential MinIO: `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` (neu khong set thi fallback qua `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`)
@@ -237,8 +247,8 @@ Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data 
 ## 8) Diem can biet khi mo rong
 - Product da co `create` voi upload anh; `update/delete` chua duoc implement.
 - Chua co controller/service cho Cart, Order, Review.
-- Auth da dung custom exception theo use-case; hien van chua co Global Exception Handler de thong nhat error envelope.
-- Chua co Global Exception Handler (response loi se theo mac dinh Spring).
+- Auth da dung custom exception theo use-case cho service/controller.
+- Chua co `@RestControllerAdvice` tong quat cho business exception; tuy nhien security da co handler rieng cho `401/403`.
 - `Product.specs` dung JSON column trong Postgres (JPA JSON mapping).
 - Da co `MinioStorageService` de upload/xoa/resolve public URL.
 
