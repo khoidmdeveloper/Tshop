@@ -225,7 +225,7 @@ Postgres: `localhost:5432` (mac dinh)
 MinIO S3: `http://localhost:9000`
 MinIO Console: `http://localhost:9001`
 
-Bucket mac dinh: `tshop`
+Bucket mac dinh: `tshop` (duoc tao tu dong boi service `minio-init`, khong can tao tay tren Console).
 
 ### 7.3 Chay ung dung
 Tren Windows:

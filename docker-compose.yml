@@ -33,6 +33,23 @@ services:
     volumes:
       - tshop_minio:/data
 
+  minio-init:
+    image: minio/mc:latest
+    container_name: tshop-minio-init
+    env_file:
+      - .env
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set tshop http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}; do
+      echo 'Waiting for MinIO...';
+      sleep 2;
+      done;
+      mc mb --ignore-existing tshop/${MINIO_BUCKET:-tshop};
+      "
+    restart: "no"
+
 volumes:
   tshop_pgdata:
   tshop_minio:
