@@ -13,7 +13,10 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import com.project.tshop.validation.ValueValidation;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
@@ -28,6 +31,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "products")
+@Getter
+@Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class Product {
@@ -71,15 +77,19 @@ public class Product {
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<ProductImage> images = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<CartItem> cartItems = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 

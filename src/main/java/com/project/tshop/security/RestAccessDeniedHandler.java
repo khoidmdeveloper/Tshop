@@ -1,6 +1,7 @@
 package com.project.tshop.security;
 
-import jakarta.servlet.ServletException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.tshop.dto.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -9,39 +10,28 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 
+/**
+ * Returns 403 JSON response instead of default HTML for access denied errors.
+ */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
+    private final ObjectMapper objectMapper;
+
+    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Override
-    public void handle(
-            HttpServletRequest request,
+    public void handle(HttpServletRequest request,
             HttpServletResponse response,
-            AccessDeniedException accessDeniedException
-    ) throws IOException, ServletException {
+            AccessDeniedException accessDeniedException) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(buildErrorBody("Access denied."));
-    }
+        response.setCharacterEncoding("UTF-8");
 
-    private String buildErrorBody(String message) {
-        return "{\"success\":false,"
-                + "\"message\":\"" + escapeJson(message) + "\","
-                + "\"data\":null,"
-                + "\"timestamp\":\"" + LocalDateTime.now() + "\"}";
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n");
+        ApiResponse<Object> body = ApiResponse.error("Access denied: " + accessDeniedException.getMessage());
+        objectMapper.writeValue(response.getWriter(), body);
     }
 }

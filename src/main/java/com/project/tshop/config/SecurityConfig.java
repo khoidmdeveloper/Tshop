@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/payment/vnpay-return", "/api/payment/vnpay-ipn").permitAll()
+                        .requestMatchers("/api/shipping/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
