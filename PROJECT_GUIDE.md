@@ -1,258 +1,334 @@
-# Project Guide - Tshop
+# Project Guide - Tshop Backend
 
-Muc tieu: tai lieu nay giup thanh vien moi (hoac sau nay doc lai) hieu nhanh kien truc, chuc nang, va cach chay project ma khong can doc toan bo code.
+Tai lieu nay mo ta backend `Tshop` theo trang thai code hien tai, de team co the doc nhanh ma khong phai lan tung package.
 
-## 1) Tong quan nhanh
-- Tshop la backend Spring Boot (Java 17) cho mo hinh thuong mai dien tu co ban.
-- Su dung PostgreSQL, Spring Data JPA, Spring Security (JWT), Validation, Lombok.
-- Hien tai co API auth, profile (get/update), CRUD cho Category, va Product API (list/detail/create co upload anh).
-- Cac domain Cart/Order/Review chua co controller/service day du.
+## 1. Tong quan
 
-## 2) Tech stack va phu thuoc chinh
-- Spring Boot 4.0.1
-- Spring WebMVC, Spring Security, Spring Validation
-- Spring Data JPA + PostgreSQL
-- JWT (io.jsonwebtoken)
-- Lombok (Builder, v.v.)
+- Spring Boot 4.0.1, Java 17
+- PostgreSQL + Spring Data JPA
+- Spring Security + JWT
+- MinIO cho luu anh product
+- VNPay cho thanh toan
+- GHN cho shipping fee va master data dia chi
 
-## 3) Kien truc va design patterns
-### Layered Architecture
-- `controller/`: nhan request, validate DTO, tra ve `ApiResponse`.
-- `service/`: xu ly nghiep vu, phat sinh token, validate, thao tac repository.
-- `repository/`: Spring Data JPA, truy van DB.
-- `entity/`: JPA entities, quan he giua bang.
-- `security/`: JWT service + filter, SecurityConfig.
+Backend hien tai da co cac module:
 
-### Repository Pattern (Spring Data JPA)
-`UserRepository`, `CategoryRepository`, `ProductRepository`, `ProductImageRepository`, `OrderRepository` ke thua `JpaRepository`, dong vai tro truy van DB.
+- Auth
+- Profile
+- Categories
+- Products
+- Cart
+- Orders
+- Shipping
+- Payment callback
 
-### DTO Pattern
-`dto/auth/*`, `dto/profile/*`, `dto/category/*`, `dto/product/*` gom request/response theo tung use-case, validate bang annotation (`@NotBlank`, `@Email`, `@Size`).
+## 2. Cau truc code
 
-### Builder Pattern (Lombok)
-`User`, `AuthResponse`, `RegisterRequest`, v.v. su dung `@Builder` de khoi tao object ro rang.
+```text
+Tshop/
+|-- src/main/java/com/project/tshop/
+|   |-- config/
+|   |-- controller/
+|   |-- dto/
+|   |-- entity/
+|   |-- exception/
+|   |-- repository/
+|   |-- security/
+|   `-- service/
+|-- src/main/resources/application.properties
+|-- docker-compose.yml
+|-- .env.example
+`-- PROJECT_GUIDE.md
+```
 
-### Security Filter Chain
-`JwtAuthenticationFilter` (OncePerRequestFilter) doc header `Authorization: Bearer ...`, xac thuc token va dat `SecurityContext`.
+## 3. Kien truc
 
-Token validation behavior (cap nhat):
-- Neu access token het han/khong hop le, filter khong throw ra `500` nua; request duoc mark loi auth de Spring Security xu ly.
-- `RestAuthenticationEntryPoint` tra `401` theo format `ApiResponse` (vi du: "Access token expired.", "Invalid access token.").
-- `RestAccessDeniedHandler` tra `403` theo format `ApiResponse` khi user da xac thuc nhung khong du quyen.
+### Layered architecture
+- `controller`: nhan request, validate DTO, tra `ApiResponse`
+- `service`: xu ly nghiep vu
+- `repository`: truy van JPA
+- `entity`: model va quan he
+- `security`: JWT filter, entry point, access denied handler
+- `config`: security, MinIO, seed data, VNPay config
 
-### Domain Validation (Entity hooks)
-`ValueValidation.requireOneOf(...)` duoc goi trong `@PrePersist`/`@PreUpdate` cua `User`, `Product`, `Order` de rang buoc gia tri status/role.
+### Response format
 
-## 4) Chuc nang (function) hien tai
+API thong nhat theo wrapper:
+
+```json
+{
+  "success": true,
+  "message": "text",
+  "data": {},
+  "timestamp": "..."
+}
+```
+
+## 4. API hien tai
+
+Base path: `/api`
+
 ### Authentication
-File: `controller/AuthenticationController.java`
-- `POST /api/auth/register` -> tao user, tra ve access + refresh token.
-- `POST /api/auth/login` -> xac thuc, tra ve token.
-- `POST /api/auth/refresh` -> tao access token moi tu refresh token.
-- `POST /api/auth/logout` -> revoke refresh token hien tai.
+Controller: `AuthenticationController`
 
-Flow:
-1. Controller nhan DTO va validate.
-2. `AuthenticationService`:
-   - `register`: check email, ma hoa password (BCrypt), luu user, tao token.
-   - `login`: authenticate qua `AuthenticationManager`, tao token.
-   - `refreshToken`: validate refresh token (bao gom check revoke), tao access token moi.
-   - `logout`: hash refresh token va luu vao bang revoke.
-3. `JwtService` tao/kiem tra token voi HS256.
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
 
-AuthResponse tra ve:
-- `access_token`, `refresh_token`, `token_type`
-- `email`, `full_name`, `phone`, `role`
+Auth response tra ve:
+- `access_token`
+- `refresh_token`
+- `token_type`
+- `email`
+- `full_name`
+- `phone`
+- `role`
 
-Token lifetime mac dinh (xem `application.properties`):
-- `jwt.access-token-expiration=60000` (1 phut)
-- `jwt.refresh-token-expiration=604800000` (7 ngay)
+### Profile
+Controller: `ProfileController`
 
-Custom exceptions trong auth:
-- `EmailAlreadyExistsException` (409)
-- `UserNotFoundException` (404)
-- `InvalidRefreshTokenException` (401)
-- `RefreshTokenRevokedException` (401)
+- `GET /api/profile`
+- `PUT /api/profile`
 
-### Response wrapper
-`ApiResponse<T>` dong goi response theo format: `success`, `message`, `data`, `timestamp`.
-
-### Profile API (Current user)
-Files: `controller/ProfileController.java`, `service/ProfileService.java`
-- `GET /api/profile` -> lay profile cua user dang dang nhap.
-- `PUT /api/profile` -> cap nhat profile cua user dang dang nhap.
-
-Response profile hien tai gom:
+Field hien tai:
 - `firstName`, `lastName`, `email`, `phone`
 - `address`, `city`, `state`
 - `memberSince`, `totalOrders`, `totalSpent`
 
-Behavior update profile:
-- Partial update: field nao gui len thi moi xu ly field do.
-- Validate email format + unique email neu thay doi email.
-- Chuan hoa du lieu text (`trim`, bo khoang trang du).
-- Toi uu no-op: neu khong co thay doi thuc te thi khong `save` vao DB.
-- Khong su dung truong `zip` trong profile.
+### Categories
+Controller: `CategoryController`
 
-### Category CRUD
-File: `controller/CategoryController.java`
-- `POST /api/categories` -> tao category
-- `PUT /api/categories/{id}` -> cap nhat category
-- `DELETE /api/categories/{id}` -> xoa category
-- `GET /api/categories/{id}` -> xem chi tiet category
-- `GET /api/categories?search=&page=0&size=10` -> danh sach + tim kiem
+- `POST /api/categories`
+- `PUT /api/categories/{id}`
+- `DELETE /api/categories/{id}`
+- `GET /api/categories/{id}`
+- `GET /api/categories?search=&page=0&size=10`
 
-**Paging mac dinh**: `page=0`, `size=10` va size duoc gioi han toi da 10.
+Ghi chu:
+- Category routes khong public; can authenticated
+- Paging mac dinh `page=0`, `size=10`
 
-**Behavior cap nhat (update)**:
-- Field nao khong gui (null) thi giu nguyen gia tri cu.
-- `name`: chi update khi khong null va khong blank.
-- `slug`:
-  - Neu gui slug rong/blank -> set `null`.
-  - Neu `name` thay doi -> slug tu dong sinh lai tu `name`.
-  - Neu `name` khong doi -> slug duoc resolve tu slug request (neu co) hoac tu `name` (neu khong co).
-- `parentId`: neu khong gui -> giu nguyen. Parent khong duoc la chinh no va phai ton tai.
+### Products
+Controller: `ProductController`
 
-### Product API
-Files: `controller/ProductController.java`, `service/ProductService.java`
-- `GET /api/products?search=&category=&page=0&size=24` -> danh sach san pham co phan trang.
-- `GET /api/products/{id}` -> chi tiet san pham.
-- `POST /api/products` (`multipart/form-data`, role `ADMIN`) -> tao san pham moi voi anh.
+- `GET /api/products`
+- `GET /api/products/{id}`
+- `POST /api/products` with `multipart/form-data`
 
-List response item gom:
-- `id`, `name`, `slug`, `price`, `stockQuantity`
-- `thumbnail`
-- `categoryName`, `categorySlug`
+Ghi chu:
+- `GET /api/products/**` dang public
+- `POST /api/products` duoc bao ve bang `@PreAuthorize("hasRole('ADMIN')")`
+- Create product nhan:
+  - `payload` JSON
+  - `thumbnail`
+  - optional `images`
 
-Detail response gom:
-- Cac field list item + `description`, `status`, `categoryId`
-- `images[]` (url, altText, sortOrder), sap xep theo `sortOrder` tang dan.
-- Neu product chua co image trong `product_images`, service fallback 1 anh tu `thumbnail`.
+### Cart
+Controller: `CartController`
 
-Create request (`POST /api/products`) gom:
-- `payload` (JSON): `categoryId`, `name`, `slug?`, `price`, `stockQuantity`, `description?`, `status?`
-- `thumbnail` (file anh, bat buoc)
-- `images` (danh sach file anh, tuy chon, toi da 10 file)
+- `GET /api/cart`
+- `POST /api/cart/items`
+- `PUT /api/cart/items/{itemId}`
+- `DELETE /api/cart/items/{itemId}`
+- `DELETE /api/cart`
 
-Behavior upload:
-- BE chi chap nhan file anh hop le (MIME `image/*` va decode duoc bang `ImageIO`).
-- Anh duoc upload len MinIO, sau do DB luu URL public day du cho `products.thumbnail` va `product_images.object_key`.
-- Neu tao product loi sau khi upload mot phan, he thong xoa file da upload theo co che best-effort rollback.
+Cart API can authenticated.
 
-### Data initialization
-File: `config/DataInitializer.java`
-- Khi app start, he thong seed du lieu mac dinh theo co che idempotent (chi tao ban ghi chua ton tai).
-- Tai khoan:
-  - admin: `admin@tshop.local` / `Admin@123` / role `admin`
-  - customer 1: `customer1@tshop.local` / `Customer@123` / role `customer`
-  - customer 2: `customer2@tshop.local` / `Customer@123` / role `customer`
-- Category: seed 8 loai (`cpu`, `gpu`, `motherboard`, `ram`, `storage`, `psu`, `case`, `cooler`).
-- Product: seed mau theo danh sach trong code (`PRODUCT_SEEDS`), status `active`.
-- Product image: moi product seed 1 anh vao bang `product_images` (URL online), dong thoi `products.thumbnail` cung dung URL online.
-- Co check unique key theo `email` (user) va `slug` (category/product) nen restart app khong tao du lieu trung.
+### Orders
+Controller: `OrderController`
 
-## 5) Mo hinh du lieu (entities) va quan he
+- `POST /api/orders/checkout`
+- `GET /api/orders`
+- `GET /api/orders/{id}`
+- `PUT /api/orders/{id}/cancel`
+
+Ghi chu:
+- `checkout` co the tra `paymentUrl` neu order di qua VNPay
+- `GET /api/orders` tra `Page<OrderResponse>`
+
+### Shipping
+Controller: `ShippingController`
+
+- `POST /api/shipping/fee`
+- `GET /api/shipping/provinces`
+- `GET /api/shipping/districts?provinceId=...`
+- `GET /api/shipping/wards?districtId=...`
+
+Shipping routes dang public de FE checkout goi truc tiep.
+
+### Payment
+Controller: `PaymentController`
+
+- `GET /api/payment/vnpay-return`
+- `GET /api/payment/vnpay-ipn`
+
+Hai endpoint nay dang public.
+
+## 5. Security
+
+File chinh: `config/SecurityConfig.java`
+
+### Public routes
+- `/api/auth/**`
+- `/api/payment/vnpay-return`
+- `/api/payment/vnpay-ipn`
+- `/api/shipping/**`
+- `/api/products/**`
+- `/error`
+- `OPTIONS /**`
+
+### Protected routes
+- Tat ca route con lai can authenticated
+
+### JWT behavior
+- `JwtAuthenticationFilter` doc Bearer token va set `SecurityContext`
+- `RestAuthenticationEntryPoint` tra `401` theo `ApiResponse`
+- `RestAccessDeniedHandler` tra `403` theo `ApiResponse`
+- Access token mac dinh: `900000ms` (15 phut)
+- Refresh token mac dinh: `604800000ms` (7 ngay)
+
+## 6. Data model nhanh
+
 ### User
-- Truong: email, passwordHash, role (customer/admin), fullName, phone, address, city, state
-- Quan he: 1-1 Cart, 1-n Order, 1-n Review
-- Implement `UserDetails` de tich hop Spring Security
-
-### Product
-- Gia, ton kho, mo ta, specs (JSON), status (active/draft/archived)
-- Quan he: n-1 Category, 1-n ProductImage, CartItem, OrderItem, Review
+- email, passwordHash, role, fullName, phone, address, city, state
+- 1-1 cart
+- 1-n orders
 
 ### Category
-- Coi nhu cay danh muc (parent/children)
-- Quan he: 1-n Product
+- name, slug, parent
 
-### Cart / CartItem
-- Cart gan voi User (1-1), CartItem chua Product + quantity
-
-### Order / OrderItem
-- Order gan voi User (n-1), gom OrderItem (1-n)
-- Status: pending/confirmed/shipped/delivered/cancelled
-
-### Review
-- Review gan User + Product, co rating/comment
+### Product
+- category, name, slug, price, stockQuantity, description, thumbnail, status
 
 ### ProductImage
-- Cot `object_key` dang duoc dung de luu URL public anh (tuong thich du lieu URL online va MinIO URL).
+- objectKey, altText, sortOrder
+
+### Cart / CartItem
+- cart cua user
+- item gan voi product va quantity
+
+### Order / OrderItem
+- order cua user
+- order item gan product, unit price, quantity
 
 ### RevokedRefreshToken
-- Luu hash cua refresh token da logout (`token_hash`) de chan refresh token do.
-- Co `expires_at` de cleanup token revoke het han.
+- luu hash refresh token da revoke
 
-## 6) Cau hinh va bien moi truong
-`application.properties`:
-- Doc `.env` qua `spring.config.import=optional:file:./.env[.properties]`
-- Cau hinh DB tu `POSTGRES_*`
-- JWT tu `JWT_SECRET`, `jwt.access-token-expiration`, `jwt.refresh-token-expiration`
-  - Mac dinh hien tai: access token `60000ms` (1 phut), refresh token `604800000ms` (7 ngay)
-- Multipart upload: `spring.servlet.multipart.max-file-size=10MB`, `spring.servlet.multipart.max-request-size=50MB`
-- MinIO: `MINIO_ENDPOINT`, `MINIO_BUCKET`, `MINIO_PUBLIC_BASE_URL`
-- Tuy chon override credential MinIO: `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` (neu khong set thi fallback qua `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`)
+## 7. Seed data
 
-### CORS (SecurityConfig)
-- Backend bat CORS thong qua `CorsConfigurationSource` trong `SecurityConfig`.
-- Dang dung `allowedOriginPatterns("*")` (cho frontend nao cung duoc), phu hop cho du an nho/dev.
-- Methods cho phep: `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
-- Headers: `*`, expose header `Authorization`, `allowCredentials=true`.
-- Co permit `OPTIONS /**` de preflight request di qua Spring Security.
-- Security rule hien tai cho phep public `GET /api/products/**` de FE co the browse san pham truoc khi dang nhap.
+File: `config/DataInitializer.java`
 
-**Luu y quan trong**: `JwtService` ho tro 2 kieu `JWT_SECRET`:
-- Base64 hop le (uu tien su dung neu decode duoc va >= 32 bytes).
-- Plain text (neu >= 32 bytes thi dung truc tiep, neu ngan hon se duoc bam SHA-256 de dat 32 bytes cho HS256).
-- Neu secret rong, he thong throw `InvalidJwtSecretException`.
+App se seed du lieu mac dinh theo cach idempotent.
 
-Goi y tao JWT secret (PowerShell):
+### Seed users
+- `admin@tshop.local` / `Admin@123`
+- `customer1@tshop.local` / `Customer@123`
+- `customer2@tshop.local` / `Customer@123`
+
+### Seed categories
+- `cpu`
+- `gpu`
+- `motherboard`
+- `ram`
+- `storage`
+- `psu`
+- `case`
+- `cooler`
+
+### Seed products
+- Mot nhom product mau tu `PRODUCT_SEEDS`
+- Moi product seed co thumbnail va product image
+
+## 8. Cau hinh
+
+Backend doc env tu `.env` nho:
+
+```properties
+spring.config.import=optional:file:./.env[.properties]
 ```
+
+### Bien moi truong chinh
+
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `JWT_SECRET`
+- `MINIO_ENDPOINT`
+- `MINIO_BUCKET`
+- `MINIO_ROOT_USER`
+- `MINIO_ROOT_PASSWORD`
+- `MINIO_PUBLIC_BASE_URL`
+- `VNPAY_TMN_CODE`
+- `VNPAY_HASH_SECRET`
+- `VNPAY_RETURN_URL`
+- `VNPAY_FRONTEND_RETURN_URL`
+- `VNPAY_EXCHANGE_RATE`
+- `GHN_TOKEN`
+- `GHN_SHOP_ID`
+- `GHN_API_URL`
+- `GHN_FROM_DISTRICT_ID`
+
+### Multipart limits
+- `spring.servlet.multipart.max-file-size=10MB`
+- `spring.servlet.multipart.max-request-size=50MB`
+
+### JWT secret note
+
+`JwtService` ho tro:
+- Base64 secret hop le
+- Plain text secret, neu ngan se duoc bam SHA-256 de dat do dai toi thieu cho HS256
+
+PowerShell generate secret:
+
+```powershell
 [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 ```
 
-## 7) Cach chay project (local)
-### 7.1 Tao file .env
-Copy `.env.example` -> `.env` va cap nhat:
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`, `POSTGRES_HOST`
-- `JWT_SECRET` (base64)
-- (MinIO) `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_PORT`, `MINIO_CONSOLE_PORT`, `MINIO_BUCKET`
+## 9. Local setup
 
-### 7.2 Chay DB + MinIO bang Docker
-```
+### 1. Tao `.env`
+Copy `.env.example` thanh `.env` va dien cac gia tri can thiet.
+
+### 2. Start Postgres + MinIO
+
+```bash
 docker compose up -d
 ```
-Postgres: `localhost:5432` (mac dinh)
-MinIO S3: `http://localhost:9000`
-MinIO Console: `http://localhost:9001`
 
-Bucket mac dinh: `tshop` (duoc tao tu dong boi service `minio-init`, khong can tao tay tren Console).
+Mac dinh:
+- Postgres: `localhost:5432`
+- MinIO API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
 
-### 7.3 Chay ung dung
-Tren Windows:
-```
+Bucket `tshop` duoc tao tu dong boi service `minio-init`.
+
+### 3. Chay backend
+
+Windows:
+
+```powershell
 .\mvnw.cmd spring-boot:run
 ```
-Hoac:
-```
+
+Test:
+
+```powershell
 .\mvnw.cmd test
 ```
 
-Neu dung Maven thuong:
+Unix:
+
+```bash
+./mvnw spring-boot:run
 ```
-mvn spring-boot:run
-```
 
-Sau khi app start lan dau, co the dang nhap bang cac tai khoan seed o muc `Data initialization`.
+## 10. Diem can biet khi mo rong
 
-## 8) Diem can biet khi mo rong
-- Product da co `create` voi upload anh; `update/delete` chua duoc implement.
-- Chua co controller/service cho Cart, Order, Review.
-- Auth da dung custom exception theo use-case cho service/controller.
-- Chua co `@RestControllerAdvice` tong quat cho business exception; tuy nhien security da co handler rieng cho `401/403`.
-- `Product.specs` dung JSON column trong Postgres (JPA JSON mapping).
-- Da co `MinioStorageService` de upload/xoa/resolve public URL.
-
-## 9) Dinh huong them (goi y cho team)
-- Them `@RestControllerAdvice` de thong nhat format loi.
-- Them API `update/delete` cho product va dong bo luong xoa anh tren MinIO.
-- Toi uu quan ly MinIO bucket policy theo moi truong (dev/staging/prod) va bo sung luong xoa file theo lifecycle.
+- Product hien co `list`, `detail`, `create`; chua thay `update/delete`
+- Payment flow hien xoay quanh VNPay callback/IPN
+- Shipping hien dang goi GHN service
+- Security route-level chu yeu dua tren `SecurityConfig` + `@PreAuthorize`
+- `HELP.md` chi giu vai tro quick start; tai lieu chinh la file nay
