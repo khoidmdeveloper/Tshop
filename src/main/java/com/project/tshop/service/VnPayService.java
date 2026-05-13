@@ -59,7 +59,7 @@ public class VnPayService {
         String createDate = formatter.format(cal.getTime());
         vnpParams.put("vnp_CreateDate", createDate);
 
-        cal.add(Calendar.MINUTE, 15);
+        cal.add(Calendar.MINUTE, vnPayConfig.getExpireMinutes());
         String expireDate = formatter.format(cal.getTime());
         vnpParams.put("vnp_ExpireDate", expireDate);
 

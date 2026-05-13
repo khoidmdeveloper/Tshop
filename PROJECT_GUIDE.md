@@ -146,6 +146,7 @@ Controller: `OrderController`
 Ghi chu:
 - `checkout` co the tra `paymentUrl` neu order di qua VNPay
 - `GET /api/orders` tra `Page<OrderResponse>`
+- Order VNPay unpaid se tu dong chuyen `status=cancelled`, `paymentStatus=failed` sau khi qua han cua so thanh toan khi user mo order history/detail
 
 ### Shipping
 Controller: `ShippingController`
@@ -164,6 +165,10 @@ Controller: `PaymentController`
 - `GET /api/payment/vnpay-ipn`
 
 Hai endpoint nay dang public.
+
+Ghi chu:
+- `vnpay-return` verify callback tai backend roi redirect `302` ve `VNPAY_FRONTEND_RETURN_URL`
+- FE nhan `status`, `paymentStatus`, `orderId`, `message` va mot so `vnp_*` query params de hien thi ket qua
 
 ## 5. Security
 
@@ -266,6 +271,7 @@ spring.config.import=optional:file:./.env[.properties]
 - `VNPAY_RETURN_URL`
 - `VNPAY_FRONTEND_RETURN_URL`
 - `VNPAY_EXCHANGE_RATE`
+- `VNPAY_EXPIRE_MINUTES`
 - `GHN_TOKEN`
 - `GHN_SHOP_ID`
 - `GHN_API_URL`
@@ -332,3 +338,13 @@ Unix:
 - Shipping hien dang goi GHN service
 - Security route-level chu yeu dua tren `SecurityConfig` + `@PreAuthorize`
 - `HELP.md` chi giu vai tro quick start; tai lieu chinh la file nay
+
+## 11. Recent Notes
+
+### VNPay flow update - 2026-05-13
+
+- Backend khong con tra JSON truc tiep cho browser tai `GET /api/payment/vnpay-return`; endpoint nay verify callback va redirect ve FE
+- Them `vnpay.expire-minutes` / `VNPAY_EXPIRE_MINUTES` de dong bo han thanh toan VNPay va logic order timeout
+- Order VNPay unpaid qua han se duoc auto-expire thanh `cancelled` + `paymentStatus=failed` khi user tai order list/detail, dong thoi restore stock
+- Callback/IPN se bo qua order da o trang thai final de tranh xu ly lap va sai stock
+- Manual cancel voi order `paymentMethod=vnpay` nhung chua paid se set `paymentStatus=failed`
