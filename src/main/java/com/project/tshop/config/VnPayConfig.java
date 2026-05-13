@@ -22,4 +22,5 @@ public class VnPayConfig {
     private String command = "pay";
     private String orderType = "other";
     private BigDecimal exchangeRate = new BigDecimal("25000");
+    private int expireMinutes = 15;
 }

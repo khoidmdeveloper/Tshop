@@ -1,5 +1,6 @@
 package com.project.tshop.service;
 
+import com.project.tshop.config.VnPayConfig;
 import com.project.tshop.dto.order.CheckoutRequest;
 import com.project.tshop.dto.order.OrderItemResponse;
 import com.project.tshop.dto.order.OrderResponse;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +45,7 @@ public class OrderService {
     private final CartService cartService;
     private final VnPayService vnPayService;
     private final GhnService ghnService;
+    private final VnPayConfig vnPayConfig;
 
     @Transactional
     public OrderResponse checkout(String email, CheckoutRequest request, String ipAddress) {
@@ -165,6 +168,10 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid payment data");
         }
 
+        if (isVnPayOrderFinalized(order)) {
+            return toOrderResponse(order);
+        }
+
         applyVnPayResult(order, params);
         orderRepository.save(order);
         return toOrderResponse(order);
@@ -191,8 +198,8 @@ public class OrderService {
             return ipnResponse("04", "Invalid amount");
         }
 
-        if (order.getVnpayTransactionId() != null && !order.getVnpayTransactionId().isBlank()) {
-            return ipnResponse("02", "Order already confirmed");
+        if (isVnPayOrderFinalized(order)) {
+            return ipnResponse("02", "Order already processed");
         }
 
         applyVnPayResult(order, params);
@@ -200,17 +207,22 @@ public class OrderService {
         return ipnResponse("00", "Confirm Success");
     }
 
+    @Transactional
     public Page<OrderResponse> getOrders(String email, int page, int size) {
         User user = findUser(email);
         Pageable pageable = PageRequest.of(page, Math.min(size, 20));
-        return orderRepository.findByUserOrderByCreatedAtDesc(user, pageable)
+        Page<Order> orders = orderRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+        expirePendingVnPayOrders(orders.getContent());
+        return orders
                 .map(this::toOrderResponse);
     }
 
+    @Transactional
     public OrderResponse getOrderDetail(String email, UUID orderId) {
         User user = findUser(email);
         Order order = orderRepository.findByIdAndUser(orderId, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        expirePendingVnPayOrderIfNeeded(order);
         return toOrderResponse(order);
     }
 
@@ -219,6 +231,7 @@ public class OrderService {
         User user = findUser(email);
         Order order = orderRepository.findByIdAndUser(orderId, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        expirePendingVnPayOrderIfNeeded(order);
 
         if ("shipped".equals(order.getStatus()) || "delivered".equals(order.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -230,6 +243,9 @@ public class OrderService {
         }
 
         order.setStatus("cancelled");
+        if ("vnpay".equals(order.getPaymentMethod()) && !"paid".equals(order.getPaymentStatus())) {
+            order.setPaymentStatus("failed");
+        }
         if ("paid".equals(order.getPaymentStatus())) {
             log.info("Order {} cancelled after payment. Refund required.", orderId);
         }
@@ -250,6 +266,43 @@ public class OrderService {
         }
         return orderRepository.findByVnpayTxnRef(txnRef)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+    }
+
+    private void expirePendingVnPayOrders(List<Order> orders) {
+        for (Order order : orders) {
+            expirePendingVnPayOrderIfNeeded(order);
+        }
+    }
+
+    private void expirePendingVnPayOrderIfNeeded(Order order) {
+        if (!isPendingVnPayOrder(order) || !isVnPayPaymentExpired(order)) {
+            return;
+        }
+
+        order.setStatus("cancelled");
+        order.setPaymentStatus("failed");
+        restoreStock(order);
+        orderRepository.save(order);
+        log.info("Expired unpaid VNPay order {}", order.getId());
+    }
+
+    private boolean isPendingVnPayOrder(Order order) {
+        return "vnpay".equals(order.getPaymentMethod())
+                && "pending".equals(order.getStatus())
+                && "pending".equals(order.getPaymentStatus());
+    }
+
+    private boolean isVnPayPaymentExpired(Order order) {
+        if (order.getCreatedAt() == null) {
+            return false;
+        }
+
+        Instant expiresAt = order.getCreatedAt().plusSeconds(vnPayConfig.getExpireMinutes() * 60L);
+        return !Instant.now().isBefore(expiresAt);
+    }
+
+    private boolean isVnPayOrderFinalized(Order order) {
+        return !"pending".equals(order.getStatus()) || !"pending".equals(order.getPaymentStatus());
     }
 
     private void applyVnPayResult(Order order, Map<String, String> params) {

@@ -59,7 +59,7 @@ public class VnPayService {
         String createDate = formatter.format(cal.getTime());
         vnpParams.put("vnp_CreateDate", createDate);
 
-        cal.add(Calendar.MINUTE, 15);
+        cal.add(Calendar.MINUTE, vnPayConfig.getExpireMinutes());
         String expireDate = formatter.format(cal.getTime());
         vnpParams.put("vnp_ExpireDate", expireDate);
 
@@ -73,10 +73,10 @@ public class VnPayService {
             String fieldValue = vnpParams.get(fieldName);
             if (fieldValue != null && !fieldValue.isEmpty()) {
                 try {
-                    String encodedKey = URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString());
-                    String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString());
+                    String encodedKey = URLEncoder.encode(fieldName, StandardCharsets.US_ASCII);
+                    String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII);
 
-                    if (hashData.length() > 0) {
+                    if (!hashData.isEmpty()) {
                         hashData.append('&');
                         query.append('&');
                     }
@@ -148,12 +148,12 @@ public class VnPayService {
             String fieldValue = fields.get(fieldName);
             if (StringUtils.hasText(fieldValue)) {
                 try {
-                    if (hashData.length() > 0) {
+                    if (!hashData.isEmpty()) {
                         hashData.append('&');
                     }
                     hashData.append(fieldName)
                             .append('=')
-                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
                 } catch (Exception e) {
                     throw new IllegalStateException("Unable to encode VNPay return parameters", e);
                 }
