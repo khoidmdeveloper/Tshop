@@ -36,4 +36,20 @@ public class ProfileUpdateRequest {
 
     @Size(max = 100, message = "State must be at most 100 characters")
     private String state;
+
+    private Integer provinceId;
+
+    @Size(max = 100, message = "Province name must be at most 100 characters")
+    private String provinceName;
+
+    private Integer districtId;
+
+    @Size(max = 100, message = "District name must be at most 100 characters")
+    private String districtName;
+
+    @Size(max = 20, message = "Ward code must be at most 20 characters")
+    private String wardCode;
+
+    @Size(max = 100, message = "Ward name must be at most 100 characters")
+    private String wardName;
 }
