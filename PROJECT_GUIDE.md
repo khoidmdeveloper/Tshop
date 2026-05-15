@@ -93,8 +93,15 @@ Controller: `ProfileController`
 
 Field hien tai:
 - `firstName`, `lastName`, `email`, `phone`
-- `address`, `city`, `state`
+- `address`
+- `provinceId`, `provinceName`
+- `districtId`, `districtName`
+- `wardCode`, `wardName`
 - `memberSince`, `totalOrders`, `totalSpent`
+
+Ghi chu:
+- Saved shipping address trong profile duoc dung lam nguon mac dinh cho checkout FE
+- `city` / `state` van duoc giu nhu alias de tuong thich, nhung FE hien tai dung bo field shipping moi o tren
 
 ### Categories
 Controller: `CategoryController`
@@ -158,6 +165,12 @@ Controller: `ShippingController`
 
 Shipping routes dang public de FE checkout goi truc tiep.
 
+Ghi chu:
+- Backend fee flow gui `ShopId` header va de GHN tu resolve pickup address cua shop; FE chi gui dia chi nhan va package summary
+- Fee request contract chi nhan dia chi nhan va package summary: `toDistrictId`, `toWardCode`, `weight`, `insuranceValue`
+- Khong con fallback ve `0` neu GHN fee API loi; checkout se tra loi de tranh tao don free shipping sai
+- GHN shop phai co thong tin dia chi hop le trong trang quan ly shop; neu shop chua co pickup address hop le thi GHN fee/create API se tra loi
+
 ### Payment
 Controller: `PaymentController`
 
@@ -196,7 +209,8 @@ File chinh: `config/SecurityConfig.java`
 ## 6. Data model nhanh
 
 ### User
-- email, passwordHash, role, fullName, phone, address, city, state
+- email, passwordHash, role, fullName, phone
+- profile shipping: address, provinceId/provinceName, districtId/districtName, wardCode/wardName
 - 1-1 cart
 - 1-n orders
 
@@ -272,10 +286,9 @@ spring.config.import=optional:file:./.env[.properties]
 - `VNPAY_FRONTEND_RETURN_URL`
 - `VNPAY_EXCHANGE_RATE`
 - `VNPAY_EXPIRE_MINUTES`
+- `GHN_URL`
 - `GHN_TOKEN`
 - `GHN_SHOP_ID`
-- `GHN_API_URL`
-- `GHN_FROM_DISTRICT_ID`
 
 ### Multipart limits
 - `spring.servlet.multipart.max-file-size=10MB`
@@ -348,3 +361,29 @@ Unix:
 - Order VNPay unpaid qua han se duoc auto-expire thanh `cancelled` + `paymentStatus=failed` khi user tai order list/detail, dong thoi restore stock
 - Callback/IPN se bo qua order da o trang thai final de tranh xu ly lap va sai stock
 - Manual cancel voi order `paymentMethod=vnpay` nhung chua paid se set `paymentStatus=failed`
+
+### Profile + shipping update - 2026-05-13
+
+- Profile API mo rong them shipping location co cau truc: `provinceId`, `provinceName`, `districtId`, `districtName`, `wardCode`, `wardName`
+- FE account page bo `Account Preference`, thay bang saved shipping address editor dung GHN province/district/ward selectors
+- Checkout uu tien dung saved profile shipping address; user van co the chon ship den mot dia chi khac cho tung order
+
+### Shipping fee + cart summary update - 2026-05-13
+
+- Checkout FE khong con hien `Free Shipping` khi chua tinh duoc phi ship; summary doi sang trang thai `Calculated at checkout` / `Calculating...` / `Unavailable`
+- Cart summary bo promo code mock `SAVE10` va bo shipping estimate hardcoded; shipping chi duoc tinh tai checkout
+- FE quote hien tai doi GHN fee VND sang currency noi bo bang `VITE_VND_EXCHANGE_RATE` (mac dinh `25000`) thay vi lam tron thanh so nguyen
+
+### GHN config rollback - 2026-05-15
+
+- Bo `GHN_API_URL`, `GHN_FROM_DISTRICT_ID`, `GHN_FROM_WARD_CODE` khoi env contract
+- Backend chi con doc `GHN_URL`, `GHN_TOKEN`, `GHN_SHOP_ID`
+- Pickup address cua shop duoc GHN resolve tu `ShopId` header khi tinh phi va tao don; backend khong can fix cung bang env nua
+
+### Shipping payload alignment - 2026-05-15
+
+- FE checkout khong gui `items` vao `/api/shipping/fee` nua vi backend DTO khong doc field nay
+- FE gui `weight` bang tong so luong item * 500g va `insuranceValue` bang cart total quy doi sang VND
+- Backend checkout tinh lai cung package summary truoc khi tao order de phi hien thi tren FE va phi luu trong order khong bi lech
+- GHN create order cung dung tong can nang theo so luong item thay vi mac dinh 500g cho ca don
+- Backend khong chan checkout dua tren `shop/all` nua vi GHN fee/create API co the tu lay pickup address tu `ShopId` header.

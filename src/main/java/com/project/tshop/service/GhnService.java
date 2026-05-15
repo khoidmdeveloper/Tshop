@@ -10,6 +10,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class GhnService {
+    private static final int DEFAULT_ITEM_WEIGHT_GRAMS = 500;
 
     private final GhnConfig ghnConfig;
     private final RestClient restClient;
@@ -30,8 +32,6 @@ public class GhnService {
      */
     public ShippingFeeResponse calculateShippingFee(ShippingFeeRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("service_type_id", 2); // standard delivery
-        body.put("from_district_id", ghnConfig.getFromDistrictId());
         body.put("to_district_id", request.getToDistrictId());
         body.put("to_ward_code", request.getToWardCode());
         body.put("weight", request.getWeight() != null ? request.getWeight() : 500);
@@ -39,6 +39,7 @@ public class GhnService {
         body.put("length", 30);
         body.put("width", 20);
         body.put("height", 10);
+        body.put("service_type_id", 2);
 
         try {
             Map<String, Object> response = restClient.post()
@@ -72,34 +73,34 @@ public class GhnService {
      * Create a shipping order on GHN.
      */
     public String createShippingOrder(Order order) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("to_name", order.getReceiverName());
-        body.put("to_phone", order.getReceiverPhone());
-        body.put("to_address", order.getShippingAddress());
-        body.put("to_district_id", order.getDistrictId());
-        body.put("to_ward_code", order.getWardCode());
-        body.put("weight", 500); // default 500g
-        body.put("length", 30);
-        body.put("width", 20);
-        body.put("height", 10);
-        body.put("service_type_id", 2);
-        body.put("payment_type_id", "cod".equals(order.getPaymentMethod()) ? 2 : 1); // 1=seller pays, 2=buyer pays
-        body.put("required_note", "CHOXEMHANGKHONGTHU");
-        body.put("cod_amount", "cod".equals(order.getPaymentMethod()) ? order.getTotalAmount().intValue() : 0);
-        body.put("client_order_code", order.getId().toString());
-        body.put("content", "Tshop Order #" + order.getId().toString().substring(0, 8));
-
-        // Items
-        List<Map<String, Object>> ghnItems = order.getItems().stream().map(item -> {
-            Map<String, Object> ghnItem = new HashMap<>();
-            ghnItem.put("name", item.getProductName());
-            ghnItem.put("quantity", item.getQuantity());
-            ghnItem.put("price", item.getUnitPrice().intValue());
-            return ghnItem;
-        }).toList();
-        body.put("items", ghnItems);
-
         try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("to_name", order.getReceiverName());
+            body.put("to_phone", order.getReceiverPhone());
+            body.put("to_address", order.getShippingAddress());
+            body.put("to_district_id", order.getDistrictId());
+            body.put("to_ward_code", order.getWardCode());
+            body.put("weight", calculateOrderWeight(order));
+            body.put("length", 30);
+            body.put("width", 20);
+            body.put("height", 10);
+            body.put("service_type_id", 2);
+            body.put("payment_type_id", "cod".equals(order.getPaymentMethod()) ? 2 : 1); // 1=seller pays, 2=buyer pays
+            body.put("required_note", "CHOXEMHANGKHONGTHU");
+            body.put("cod_amount", "cod".equals(order.getPaymentMethod()) ? order.getTotalAmount().intValue() : 0);
+            body.put("client_order_code", order.getId().toString());
+            body.put("content", "Tshop Order #" + order.getId().toString().substring(0, 8));
+
+            // Items
+            List<Map<String, Object>> ghnItems = order.getItems().stream().map(item -> {
+                Map<String, Object> ghnItem = new HashMap<>();
+                ghnItem.put("name", item.getProductName());
+                ghnItem.put("quantity", item.getQuantity());
+                ghnItem.put("price", item.getUnitPrice().intValue());
+                return ghnItem;
+            }).toList();
+            body.put("items", ghnItems);
+
             Map<String, Object> response = restClient.post()
                     .uri(ghnConfig.getApiUrl() + "/shipping-order/create")
                     .header("Token", ghnConfig.getToken())
@@ -199,13 +200,25 @@ public class GhnService {
         }
     }
 
+    private int calculateOrderWeight(Order order) {
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            return DEFAULT_ITEM_WEIGHT_GRAMS;
+        }
+
+        int totalWeight = order.getItems().stream()
+                .mapToInt(item -> DEFAULT_ITEM_WEIGHT_GRAMS
+                        * Math.max(1, item.getQuantity() != null ? item.getQuantity() : 1))
+                .sum();
+        return Math.max(DEFAULT_ITEM_WEIGHT_GRAMS, totalWeight);
+    }
+
     /**
      * Build GHN API URL.
-     * Master data APIs use a different base path compared to shipping orders.
+     * Data APIs use a different base path compared to shipping orders.
      */
     private String buildGhnUrl(String path) {
         if (path.startsWith("/master-data")) {
-            // Replace /v2 with nothing for master data
+            // Replace /v2 with nothing for data
             String baseUrl = ghnConfig.getApiUrl().replace("/v2", "");
             return baseUrl + path;
         }

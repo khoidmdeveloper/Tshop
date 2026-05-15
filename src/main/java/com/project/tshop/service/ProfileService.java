@@ -90,18 +90,52 @@ public class ProfileService {
             }
         }
 
-        if (request.getCity() != null) {
-            String normalizedCity = normalizeOptionalText(request.getCity());
-            if (!Objects.equals(normalizeOptionalText(user.getCity()), normalizedCity)) {
-                user.setCity(normalizedCity);
+        String requestedProvinceName = request.getProvinceName() != null
+                ? request.getProvinceName()
+                : request.getCity();
+        if (request.getProvinceName() != null || request.getCity() != null) {
+            String normalizedProvinceName = normalizeOptionalText(requestedProvinceName);
+            if (!Objects.equals(normalizeOptionalText(firstNonBlank(user.getProvinceName(), user.getCity())), normalizedProvinceName)) {
+                user.setProvinceName(normalizedProvinceName);
+                user.setCity(normalizedProvinceName);
                 changed = true;
             }
         }
 
-        if (request.getState() != null) {
-            String normalizedState = normalizeOptionalText(request.getState());
-            if (!Objects.equals(normalizeOptionalText(user.getState()), normalizedState)) {
-                user.setState(normalizedState);
+        if (request.getProvinceId() != null && !Objects.equals(user.getProvinceId(), request.getProvinceId())) {
+            user.setProvinceId(request.getProvinceId());
+            changed = true;
+        }
+
+        String requestedDistrictName = request.getDistrictName() != null
+                ? request.getDistrictName()
+                : request.getState();
+        if (request.getDistrictName() != null || request.getState() != null) {
+            String normalizedDistrictName = normalizeOptionalText(requestedDistrictName);
+            if (!Objects.equals(normalizeOptionalText(firstNonBlank(user.getDistrictName(), user.getState())), normalizedDistrictName)) {
+                user.setDistrictName(normalizedDistrictName);
+                user.setState(normalizedDistrictName);
+                changed = true;
+            }
+        }
+
+        if (request.getDistrictId() != null && !Objects.equals(user.getDistrictId(), request.getDistrictId())) {
+            user.setDistrictId(request.getDistrictId());
+            changed = true;
+        }
+
+        if (request.getWardCode() != null) {
+            String normalizedWardCode = normalizeOptionalText(request.getWardCode());
+            if (!Objects.equals(normalizeOptionalText(user.getWardCode()), normalizedWardCode)) {
+                user.setWardCode(normalizedWardCode);
+                changed = true;
+            }
+        }
+
+        if (request.getWardName() != null) {
+            String normalizedWardName = normalizeOptionalText(request.getWardName());
+            if (!Objects.equals(normalizeOptionalText(user.getWardName()), normalizedWardName)) {
+                user.setWardName(normalizedWardName);
                 changed = true;
             }
         }
@@ -121,6 +155,8 @@ public class ProfileService {
         NameParts nameParts = splitFullName(user.getFullName());
         long totalOrders = orderRepository.countByUser_Id(user.getId());
         BigDecimal totalSpent = orderRepository.sumTotalAmountByUserId(user.getId());
+        String provinceName = firstNonBlank(user.getProvinceName(), user.getCity());
+        String districtName = firstNonBlank(user.getDistrictName(), user.getState());
 
         return ProfileResponse.builder()
                 .firstName(nameParts.firstName())
@@ -128,8 +164,14 @@ public class ProfileService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .address(user.getAddress())
-                .city(user.getCity())
-                .state(user.getState())
+                .city(provinceName)
+                .state(districtName)
+                .provinceId(user.getProvinceId())
+                .provinceName(provinceName)
+                .districtId(user.getDistrictId())
+                .districtName(districtName)
+                .wardCode(user.getWardCode())
+                .wardName(user.getWardName())
                 .memberSince(user.getCreatedAt())
                 .totalOrders(totalOrders)
                 .totalSpent(totalSpent)
@@ -162,6 +204,14 @@ public class ProfileService {
 
     private String normalizeEmail(String value) {
         return normalizeWhitespace(value).toLowerCase(Locale.ROOT);
+    }
+
+    private String firstNonBlank(String primary, String fallback) {
+        String normalizedPrimary = normalizeOptionalText(primary);
+        if (normalizedPrimary != null) {
+            return normalizedPrimary;
+        }
+        return normalizeOptionalText(fallback);
     }
 
     private NameParts splitFullName(String fullName) {

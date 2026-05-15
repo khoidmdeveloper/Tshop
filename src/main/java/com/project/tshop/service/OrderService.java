@@ -38,6 +38,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
+    private static final int DEFAULT_ITEM_WEIGHT_GRAMS = 500;
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -61,19 +62,17 @@ public class OrderService {
         feeRequest.setToWardCode(request.getWardCode());
 
         BigDecimal cartTotal = BigDecimal.ZERO;
+        int totalWeight = 0;
         for (CartItem cartItem : cart.getItems()) {
+            int quantity = cartItem.getQuantity() != null ? cartItem.getQuantity() : 1;
             cartTotal = cartTotal.add(cartItem.getProduct().getPrice()
-                    .multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+                    .multiply(BigDecimal.valueOf(quantity)));
+            totalWeight += DEFAULT_ITEM_WEIGHT_GRAMS * quantity;
         }
-        feeRequest.setInsuranceValue(cartTotal.intValue());
+        feeRequest.setWeight(Math.max(DEFAULT_ITEM_WEIGHT_GRAMS, totalWeight));
+        feeRequest.setInsuranceValue(cartTotal.multiply(vnPayConfig.getExchangeRate()).intValue());
 
-        ShippingFeeResponse shippingFee;
-        try {
-            shippingFee = ghnService.calculateShippingFee(feeRequest);
-        } catch (Exception e) {
-            log.warn("Could not calculate shipping fee, using 0: {}", e.getMessage());
-            shippingFee = ShippingFeeResponse.builder().total(0).build();
-        }
+        ShippingFeeResponse shippingFee = ghnService.calculateShippingFee(feeRequest);
 
         BigDecimal shippingFeeAmount = BigDecimal.valueOf(shippingFee.getTotal())
                 .divide(new BigDecimal("25000"), 2, java.math.RoundingMode.HALF_UP);
