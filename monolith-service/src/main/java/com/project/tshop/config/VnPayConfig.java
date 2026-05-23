@@ -16,7 +16,7 @@ public class VnPayConfig {
     private String tmnCode;
     private String hashSecret;
     private String payUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    private String returnUrl = "http://localhost:8080/api/payment/vnpay-return";
+    private String returnUrl = "http://localhost:8081/api/payment/vnpay-return";
     private String frontendReturnUrl = "http://localhost:5173/payment/vnpay-return";
     private String version = "2.1.0";
     private String command = "pay";

@@ -4,6 +4,7 @@ services:
     container_name: tshop-postgres
     env_file:
       - .env
+
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-tshop}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456789}
@@ -12,6 +13,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - tshop_pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s

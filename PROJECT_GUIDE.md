@@ -11,39 +11,44 @@ Tai lieu nay mo ta backend `Tshop` theo trang thai code hien tai, de team co the
 - VNPay cho thanh toan
 - GHN cho shipping fee va master data dia chi
 
-Backend hien tai da co cac module:
-
-- Auth
-- Profile
-- Categories
-- Products
-- Cart
-- Orders
-- Shipping
-- Payment callback
+Hệ thống đang trong quá trình chuyển đổi sang Microservices, bao gồm:
+- **api-gateway** (Port 8080): Định tuyến request, xử lý CORS.
+- **eureka-server** (Port 8761): Service Registry.
+- **monolith-service** (Port 8081): Chứa logic backend nguyên khối cũ (đang bóc tách dần), bao gồm: Auth, Profile, Categories, Products, Cart, Orders, Shipping, Payment callback.
 
 ## 2. Cau truc code
 
 ```text
-Tshop/
-|-- src/main/java/com/project/tshop/
-|   |-- config/
-|   |-- controller/
-|   |-- dto/
-|   |-- entity/
-|   |-- exception/
-|   |-- repository/
-|   |-- security/
-|   `-- service/
-|-- src/main/resources/application.properties
+Tshop/ (Root POM)
+|-- api-gateway/ (Spring Cloud Gateway)
+|-- eureka-server/ (Service Registry)
+|-- monolith-service/ (Legacy Backend)
+|   |-- src/main/java/com/project/tshop/
+|   |   |-- config/
+|   |   |-- controller/
+|   |   |-- dto/
+|   |   |-- entity/
+|   |   |-- exception/
+|   |   |-- repository/
+|   |   |-- security/
+|   |   `-- service/
+|   `-- src/main/resources/application.properties
 |-- docker-compose.yml
+|-- postgres-init.sql
 |-- .env.example
+|-- AI_DECISIONS.md
 `-- PROJECT_GUIDE.md
 ```
 
 ## 3. Kien truc
 
-### Layered architecture
+### Microservices Architecture (Mới)
+- Mọi request từ client sẽ đi qua **API Gateway** (`http://localhost:8080`).
+- Các service tự động đăng ký với **Eureka Server** (`http://localhost:8761`).
+- Gateway dùng tên service trên Eureka (ví dụ `lb://MONOLITH-SERVICE`) để forward request.
+- Các logical database đã được tách ra (`tshop_auth`, `tshop_catalog`, `tshop_order`, `tshop`) để chuẩn bị cho các module mới.
+
+### Layered architecture (Bên trong monolith-service)
 - `controller`: nhan request, validate DTO, tra `ApiResponse`
 - `service`: xu ly nghiep vu
 - `repository`: truy van JPA
@@ -324,25 +329,27 @@ Mac dinh:
 
 Bucket `tshop` duoc tao tu dong boi service `minio-init`.
 
-### 3. Chay backend
+### 3. Khởi chạy hệ thống Microservices
+
+Bạn cần mở nhiều terminal để chạy lần lượt các service.
 
 Windows:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+# 1. Chạy Eureka Server
+cd eureka-server
+..\mvnw.cmd spring-boot:run
+
+# 2. Chạy API Gateway (Mở tab mới)
+cd api-gateway
+..\mvnw.cmd spring-boot:run
+
+# 3. Chạy Monolith Service (Mở tab mới)
+cd monolith-service
+..\mvnw.cmd spring-boot:run
 ```
 
-Test:
-
-```powershell
-.\mvnw.cmd test
-```
-
-Unix:
-
-```bash
-./mvnw spring-boot:run
-```
+Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Monolith chạy ở cổng khác (ví dụ `8081`).
 
 ## 10. Diem can biet khi mo rong
 
@@ -353,6 +360,14 @@ Unix:
 - `HELP.md` chi giu vai tro quick start; tai lieu chinh la file nay
 
 ## 11. Recent Notes
+
+### Khởi tạo kiến trúc Microservices - 2026-05-23
+
+- Chuyển `Tshop` thành Multi-module project.
+- Di chuyển source nguyên khối vào `monolith-service`.
+- Thêm `api-gateway` và cấu hình `eureka-server`.
+- Cập nhật `docker-compose.yml` để mount `postgres-init.sql` tạo nhiều database ảo chuẩn bị cho việc bóc tách (`tshop_auth`, `tshop_catalog`, `tshop_order`).
+- `api-gateway` forward toàn bộ `/api/**` về `monolith-service`.
 
 ### VNPay flow update - 2026-05-13
 
