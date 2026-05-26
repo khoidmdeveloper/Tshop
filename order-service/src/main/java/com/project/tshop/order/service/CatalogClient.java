@@ -1,6 +1,5 @@
 package com.project.tshop.order.service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;

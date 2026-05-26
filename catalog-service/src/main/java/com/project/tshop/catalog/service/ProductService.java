@@ -3,9 +3,6 @@ import com.project.tshop.catalog.dto.product.ProductCreateRequest;
 import com.project.tshop.catalog.dto.product.ProductDetailResponse;
 import com.project.tshop.catalog.dto.product.ProductListItemResponse;
 
-import com.project.tshop.catalog.dto.product.ProductDetailResponse;
-import com.project.tshop.catalog.dto.product.ProductListItemResponse;
-import com.project.tshop.catalog.dto.product.ProductCreateRequest;
 import com.project.tshop.catalog.dto.product.ProductImageResponse;
 import com.project.tshop.catalog.entity.Category;
 import com.project.tshop.catalog.entity.Product;

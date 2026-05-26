@@ -14,6 +14,7 @@ import com.project.tshop.auth.exception.InvalidRefreshTokenException;
 import com.project.tshop.auth.repository.RevokedRefreshTokenRepository;
 import com.project.tshop.auth.repository.UserRepository;
 import com.project.tshop.auth.security.JwtService;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -117,7 +118,7 @@ public class AuthenticationService {
             throw new InvalidRefreshTokenException("Invalid refresh token");
         }
 
-        Date expiration = jwtService.extractClaim(refreshToken, claims -> claims.getExpiration());
+        Date expiration = jwtService.extractClaim(refreshToken, Claims::getExpiration);
         try {
             revokedRefreshTokenRepository.save(
                     RevokedRefreshToken.builder()

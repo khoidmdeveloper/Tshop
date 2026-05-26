@@ -5,36 +5,24 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
-import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import com.project.tshop.auth.validation.ValueValidation;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Column;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")

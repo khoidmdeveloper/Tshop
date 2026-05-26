@@ -4,32 +4,18 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
-import lombok.Data;
-import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Column;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.FetchType;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "product_images")

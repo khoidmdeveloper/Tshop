@@ -1,7 +1,6 @@
 package com.project.tshop.order.config;
 
 import com.project.tshop.order.security.JwtAuthenticationFilter;
-import com.project.tshop.order.security.JwtService;
 import com.project.tshop.order.security.RestAccessDeniedHandler;
 import com.project.tshop.order.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;

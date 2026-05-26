@@ -5,29 +5,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
-import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import jakarta.persistence.UniqueConstraint;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import org.hibernate.annotations.UuidGenerator;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "revoked_refresh_tokens",

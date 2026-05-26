@@ -1,7 +1,5 @@
 package com.project.tshop.catalog.dto.category;
 import java.util.UUID;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;

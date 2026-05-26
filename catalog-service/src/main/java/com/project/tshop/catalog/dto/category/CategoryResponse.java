@@ -1,7 +1,6 @@
 package com.project.tshop.catalog.dto.category;
 import java.util.UUID;
 import lombok.Data;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
