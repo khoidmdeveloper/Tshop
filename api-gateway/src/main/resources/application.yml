@@ -20,11 +20,22 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
           routes:
+            - id: auth-service
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/api/auth/**, /api/profile/**
+            - id: catalog-service
+              uri: lb://CATALOG-SERVICE
+              predicates:
+                - Path=/api/products/**, /api/categories/**
+            - id: order-service
+              uri: lb://ORDER-SERVICE
+              predicates:
+                - Path=/api/orders/**, /api/cart/**, /api/payment/**, /api/shipping/**
             - id: monolith-service
               uri: lb://MONOLITH-SERVICE
               predicates:
                 - Path=/api/**
-          # Temporarily routing all /api/** to monolith until we extract specific paths
 
 eureka:
   client:

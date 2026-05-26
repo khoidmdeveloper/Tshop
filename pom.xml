@@ -23,6 +23,9 @@
     <modules>
         <module>eureka-server</module>
         <module>api-gateway</module>
+        <module>auth-service</module>
+        <module>catalog-service</module>
+        <module>order-service</module>
         <module>monolith-service</module>
     </modules>
 
