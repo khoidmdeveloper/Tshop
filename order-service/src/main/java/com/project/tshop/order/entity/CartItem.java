@@ -15,8 +15,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "cart_items")
 @Getter
