@@ -286,7 +286,11 @@ spring.config.import=optional:file:./.env[.properties]
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
+- `AUTH_DB` (default: `tshop_auth`)
+- `CATALOG_DB` (default: `tshop_catalog`)
+- `ORDER_DB` (default: `tshop_order`)
 - `JWT_SECRET`
+- `INTERNAL_SECRET` (shared key for inter-service auth via `X-Internal-Secret` header)
 - `MINIO_ENDPOINT`
 - `MINIO_BUCKET`
 - `MINIO_ROOT_USER`
@@ -426,3 +430,11 @@ Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Các microservices chạy 
 - Backend checkout tinh lai cung package summary truoc khi tao order de phi hien thi tren FE va phi luu trong order khong bi lech
 - GHN create order cung dung tong can nang theo so luong item thay vi mac dinh 500g cho ca don
 - Backend khong chan checkout dua tren `shop/all` nua vi GHN fee/create API co the tu lay pickup address tu `ShopId` header.
+
+### Đồng bộ Microservices - 2026-05-29
+
+- **Profile stats**: `auth-service` bây giờ lấy `totalOrders` / `totalSpent` từ `order-service` qua internal API `GET /api/internal/orders/stats?userEmail=...` thay vì hardcode `0`. Fallback `0` nếu order-service unreachable.
+- **Catalog seed data**: Đã port seed categories/products/productImages từ `monolith-service/DataInitializer` sang `catalog-service/DataInitializer`. User seeding vẫn ở `auth-service`.
+- **Cancel order**: Endpoint `PUT /api/orders/{orderId}/cancel` là primary (match mono). `POST` giữ lại cho backward compatibility.
+- **Env**: `.env.example` đã bổ sung `AUTH_DB`, `CATALOG_DB`, `ORDER_DB`, `INTERNAL_SECRET`.
+- **Review API**: Chưa implement. Mono chỉ có entity, chưa có controller/service/API. Sẽ thêm sau nếu cần.

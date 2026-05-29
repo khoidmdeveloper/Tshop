@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -19,6 +18,7 @@ import java.util.Objects;
 public class ProfileService {
 
     private final UserRepository userRepository;
+    private final OrderStatsClient orderStatsClient;
 
     public ProfileResponse getCurrentProfile(String email) {
         User user = findUserByEmail(email);
@@ -146,6 +146,9 @@ public class ProfileService {
         String provinceName = firstNonBlank(user.getProvinceName(), user.getCity());
         String districtName = firstNonBlank(user.getDistrictName(), user.getState());
 
+        // Fetch order stats from order-service (falls back to 0 if unavailable)
+        OrderStatsClient.OrderStats stats = orderStatsClient.getOrderStats(user.getEmail());
+
         return ProfileResponse.builder()
                 .firstName(nameParts.firstName())
                 .lastName(nameParts.lastName())
@@ -161,8 +164,8 @@ public class ProfileService {
                 .wardCode(user.getWardCode())
                 .wardName(user.getWardName())
                 .memberSince(user.getCreatedAt())
-                .totalOrders(0L)         // auth-service không có cross-DB call, trả 0
-                .totalSpent(BigDecimal.ZERO)
+                .totalOrders(stats.getTotalOrders())
+                .totalSpent(stats.getTotalSpent())
                 .build();
     }
 

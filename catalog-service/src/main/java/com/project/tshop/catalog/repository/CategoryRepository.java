@@ -16,6 +16,8 @@ import java.util.UUID;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
+    Optional<Category> findFirstBySlug(String slug);
+
     @Query("""
             select new com.project.tshop.catalog.dto.category.CategoryResponse(
                 c.id, c.name, c.slug, p.id

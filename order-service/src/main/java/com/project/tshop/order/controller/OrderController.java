@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import com.project.tshop.order.dto.order.CheckoutRequest;
 import com.project.tshop.order.dto.order.OrderResponse;
@@ -58,7 +59,7 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getOrderDetail(principal.getName(), orderId)));
     }
 
-    @PostMapping("/{orderId}/cancel")
+    @PutMapping("/{orderId}/cancel")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             Principal principal,
@@ -67,6 +68,15 @@ public class OrderController {
                 orderService.cancelOrder(principal.getName(), orderId),
                 "Order cancelled successfully"
         ));
+    }
+
+    /** Backward compatibility — POST also accepted. */
+    @PostMapping("/{orderId}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrderPost(
+            Principal principal,
+            @PathVariable UUID orderId) {
+        return cancelOrder(principal, orderId);
     }
 
     private String getClientIpAddress(HttpServletRequest request) {
