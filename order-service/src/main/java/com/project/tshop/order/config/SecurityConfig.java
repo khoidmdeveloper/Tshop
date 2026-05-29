@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payment/vnpay-ipn").permitAll()
                         .requestMatchers("/api/shipping/**").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())

@@ -431,10 +431,22 @@ Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Các microservices chạy 
 - GHN create order cung dung tong can nang theo so luong item thay vi mac dinh 500g cho ca don
 - Backend khong chan checkout dua tren `shop/all` nua vi GHN fee/create API co the tu lay pickup address tu `ShopId` header.
 
-### Đồng bộ Microservices - 2026-05-29
+### Đồng bộ Microservices & Tối ưu hiệu năng - 2026-05-29
 
+- **Chuyển đổi sang UUID v7**: Thay thế toàn bộ `@UuidGenerator` mặc định (UUID v4) bằng `@UuidGenerator(style = UuidGenerator.Style.TIME)` (UUID v7) cho cả **19 JPA Entities** trên tất cả microservices và monolith-service. Sự đổi mới này giúp giảm phân mảnh chỉ mục (index fragmentation) trên database PostgreSQL, cải thiện hiệu năng sắp xếp và ghi dữ liệu, đồng thời bảo toàn kiểu dữ liệu chuẩn `UUID` của Java và database.
 - **Profile stats**: `auth-service` bây giờ lấy `totalOrders` / `totalSpent` từ `order-service` qua internal API `GET /api/internal/orders/stats?userEmail=...` thay vì hardcode `0`. Fallback `0` nếu order-service unreachable.
 - **Catalog seed data**: Đã port seed categories/products/productImages từ `monolith-service/DataInitializer` sang `catalog-service/DataInitializer`. User seeding vẫn ở `auth-service`.
 - **Cancel order**: Endpoint `PUT /api/orders/{orderId}/cancel` là primary (match mono). `POST` giữ lại cho backward compatibility.
 - **Env**: `.env.example` đã bổ sung `AUTH_DB`, `CATALOG_DB`, `ORDER_DB`, `INTERNAL_SECRET`.
-- **Review API**: Chưa implement. Mono chỉ có entity, chưa có controller/service/API. Sẽ thêm sau nếu cần.
+
+### Containerization & Docker Compose Toàn Diện - 2026-05-29
+
+- **Dockerization**: Thiết lập `Dockerfile` tối ưu sử dụng base image `eclipse-temurin:17-jre-alpine` (siêu nhẹ, bảo mật) và copy trực tiếp JAR đóng gói sẵn cho tất cả 5 microservices (`eureka-server`, `api-gateway`, `auth-service`, `catalog-service`, `order-service`).
+- **Docker Compose**: Tối ưu hóa toàn diện `docker-compose.yml` để khởi chạy toàn bộ hệ thống mượt mà chỉ bằng một lệnh duy nhất: `docker compose up -d --build`.
+- **Healthcheck & Khởi chạy tuần tự**: 
+  - Tích hợp Actuator (`spring-boot-starter-actuator`) cho các service.
+  - Bổ sung cấu hình bypass Security cho `/actuator/health` để container tự kiểm tra trạng thái sức khỏe không cần token JWT.
+  - Ràng buộc khởi chạy chặt chẽ qua `depends_on` với `condition: service_healthy` (Postgres -> Eureka & MinIO -> Backend Services -> API Gateway).
+- **Restart Policy**: Cấu hình tự khởi chạy lại tối đa 3 lần (`restart: on-failure:3`) để tránh việc container bị restart vô hạn khi gặp sự cố nghiêm trọng.
+- **Cổng công khai**: Chỉ mở cổng công khai cho API Gateway (`8080`) và Eureka Server (`8761`), đảm bảo tính đóng và bảo mật cho toàn bộ mạng nội bộ microservices.
+
