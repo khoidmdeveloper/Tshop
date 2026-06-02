@@ -1,6 +1,6 @@
 package com.project.tshop.order.controller;
 
-import com.project.tshop.order.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.order.dto.shipping.ShippingFeeRequest;
 import com.project.tshop.order.dto.shipping.ShippingFeeResponse;
 import com.project.tshop.order.service.GhnService;

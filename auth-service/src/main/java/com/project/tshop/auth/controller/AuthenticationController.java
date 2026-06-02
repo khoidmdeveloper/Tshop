@@ -5,7 +5,7 @@ import com.project.tshop.auth.dto.auth.LoginRequest;
 import com.project.tshop.auth.dto.auth.LogoutRequest;
 import com.project.tshop.auth.dto.auth.RefreshTokenRequest;
 import com.project.tshop.auth.dto.auth.RegisterRequest;
-import com.project.tshop.auth.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.auth.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

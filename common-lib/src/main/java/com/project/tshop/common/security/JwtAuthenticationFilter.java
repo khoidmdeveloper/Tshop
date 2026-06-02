@@ -1,16 +1,16 @@
-package com.project.tshop.catalog.security;
-
-import lombok.NonNull;
-import org.springframework.security.core.userdetails.User;
+package com.project.tshop.common.security;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,6 +27,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+
+    @Value("${jwt.filter.load-user-by-username:false}")
+    private boolean loadUserByUsername;
 
     public JwtAuthenticationFilter(JwtService jwtService, @Lazy UserDetailsService userDetailsService) {
         this.jwtService = jwtService;
@@ -60,19 +63,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
-                if (role == null) {
-                    role = "CUSTOMER";
+                UserDetails userDetails;
+                if (loadUserByUsername) {
+                    userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                } else {
+                    String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
+                    if (role == null) {
+                        role = "CUSTOMER";
+                    }
+                    if (!role.startsWith("ROLE_")) {
+                        role = "ROLE_" + role.toUpperCase();
+                    }
+                    userDetails = User.builder()
+                            .username(userEmail)
+                            .password("")
+                            .authorities(role)
+                            .build();
                 }
-                if (!role.startsWith("ROLE_")) {
-                    role = "ROLE_" + role.toUpperCase();
-                }
-
-                UserDetails userDetails = User.builder()
-                        .username(userEmail)
-                        .password("")
-                        .authorities(role)
-                        .build();
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -90,4 +97,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
-

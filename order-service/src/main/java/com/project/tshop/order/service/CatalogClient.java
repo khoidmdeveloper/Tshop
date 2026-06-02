@@ -1,5 +1,6 @@
 package com.project.tshop.order.service;
 
+import com.project.tshop.common.dto.ApiResponse;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -98,12 +99,5 @@ public class CatalogClient {
         private Integer stockQuantity;
         private String thumbnail;
         private String status;
-    }
-
-    @Data
-    public static class ApiResponse<T> {
-        private boolean success;
-        private String message;
-        private T data;
     }
 }

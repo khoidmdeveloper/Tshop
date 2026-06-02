@@ -1,7 +1,7 @@
 package com.project.tshop.order.controller;
 
 import com.project.tshop.order.dto.order.OrderStatsResponse;
-import com.project.tshop.order.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

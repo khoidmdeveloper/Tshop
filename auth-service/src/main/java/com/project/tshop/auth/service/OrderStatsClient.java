@@ -1,5 +1,6 @@
 package com.project.tshop.auth.service;
 
+import com.project.tshop.common.dto.ApiResponse;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,12 +61,5 @@ public class OrderStatsClient {
             stats.totalSpent = BigDecimal.ZERO;
             return stats;
         }
-    }
-
-    @Data
-    public static class ApiResponse<T> {
-        private boolean success;
-        private String message;
-        private T data;
     }
 }

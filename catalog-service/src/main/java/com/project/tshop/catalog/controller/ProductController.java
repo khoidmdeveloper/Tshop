@@ -1,5 +1,6 @@
 package com.project.tshop.catalog.controller;
-import com.project.tshop.catalog.dto.response.ApiResponse;
+
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.catalog.dto.product.ProductCreateRequest;
 import com.project.tshop.catalog.dto.product.ProductDetailResponse;
 import com.project.tshop.catalog.dto.product.ProductListItemResponse;

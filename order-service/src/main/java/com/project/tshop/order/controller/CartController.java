@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.project.tshop.order.dto.cart.AddToCartRequest;
 import com.project.tshop.order.dto.cart.CartResponse;
 import com.project.tshop.order.dto.cart.UpdateCartItemRequest;
-import com.project.tshop.order.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.order.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

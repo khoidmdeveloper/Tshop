@@ -1,5 +1,5 @@
 package com.project.tshop.catalog.controller;
-import com.project.tshop.catalog.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.catalog.dto.category.CategoryCreateRequest;
 import com.project.tshop.catalog.dto.category.CategoryResponse;
 import com.project.tshop.catalog.dto.category.CategoryUpdateRequest;

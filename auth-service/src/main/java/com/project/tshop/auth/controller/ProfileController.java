@@ -2,7 +2,7 @@ package com.project.tshop.auth.controller;
 
 import com.project.tshop.auth.dto.profile.ProfileResponse;
 import com.project.tshop.auth.dto.profile.ProfileUpdateRequest;
-import com.project.tshop.auth.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.auth.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

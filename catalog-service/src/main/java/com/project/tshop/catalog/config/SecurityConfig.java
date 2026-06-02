@@ -1,9 +1,9 @@
 package com.project.tshop.catalog.config;
 
-import com.project.tshop.catalog.security.JwtAuthenticationFilter;
-import com.project.tshop.catalog.security.JwtService;
-import com.project.tshop.catalog.security.RestAccessDeniedHandler;
-import com.project.tshop.catalog.security.RestAuthenticationEntryPoint;
+import com.project.tshop.common.security.JwtAuthenticationFilter;
+import com.project.tshop.common.security.RestAccessDeniedHandler;
+import com.project.tshop.common.security.RestAuthenticationEntryPoint;
+import com.project.tshop.common.config.CorsConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,9 +18,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -39,7 +37,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
-    private final JwtService jwtService;
 
     /**
      * Minimal UserDetailsService that reconstructs a UserDetails from JWT username (email).
@@ -79,16 +76,6 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return CorsConfig.corsConfigurationSource();
     }
 }

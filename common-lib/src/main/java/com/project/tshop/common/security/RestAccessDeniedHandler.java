@@ -1,7 +1,7 @@
-package com.project.tshop.catalog.security;
+package com.project.tshop.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.tshop.catalog.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,4 +26,3 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
         objectMapper.writeValue(response.getWriter(), ApiResponse.error("Access denied"));
     }
 }
-

@@ -1,6 +1,6 @@
-package com.project.tshop.catalog.security;
+package com.project.tshop.common.security;
 
-import com.project.tshop.catalog.exception.InvalidJwtSecretException;
+import com.project.tshop.common.exception.InvalidJwtSecretException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.DecodingException;
@@ -25,10 +25,10 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.access-token-expiration}")
+    @Value("${jwt.access-token-expiration:0}")
     private long accessTokenExpiration;
 
-    @Value("${jwt.refresh-token-expiration}")
+    @Value("${jwt.refresh-token-expiration:0}")
     private long refreshTokenExpiration;
 
     public String extractUsername(String token) {
@@ -115,4 +115,3 @@ public class JwtService {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-package com.project.tshop.auth.dto.response;
+package com.project.tshop.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

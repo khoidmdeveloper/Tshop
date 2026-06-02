@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 import com.project.tshop.order.dto.order.CheckoutRequest;
 import com.project.tshop.order.dto.order.OrderResponse;
-import com.project.tshop.order.dto.response.ApiResponse;
+import com.project.tshop.common.dto.ApiResponse;
 import com.project.tshop.order.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
