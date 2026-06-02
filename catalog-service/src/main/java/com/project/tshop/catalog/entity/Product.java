@@ -13,7 +13,7 @@ import jakarta.persistence.JoinColumn;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import com.project.tshop.catalog.validation.ValueValidation;
+import com.project.tshop.common.validation.ValueValidation;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;

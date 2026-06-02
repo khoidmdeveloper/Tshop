@@ -17,7 +17,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import com.project.tshop.order.validation.ValueValidation;
+import com.project.tshop.common.validation.ValueValidation;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
