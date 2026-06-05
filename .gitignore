@@ -33,7 +33,13 @@ build/
 ### VS Code ###
 .vscode/
 
+.serena
+
 # Local env files
 .env
 
 .idea/
+
+# Frontend
+/frontend/node_modules/
+/frontend/dist/

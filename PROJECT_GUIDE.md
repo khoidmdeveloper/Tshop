@@ -11,10 +11,13 @@ Tai lieu nay mo ta backend `Tshop` theo trang thai code hien tai, de team co the
 - VNPay cho thanh toan
 - GHN cho shipping fee va master data dia chi
 
-Hệ thống đang trong quá trình chuyển đổi sang Microservices, bao gồm:
+Hệ thống đã được chuyển đổi sang Microservices Architecture, bao gồm:
 - **api-gateway** (Port 8080): Định tuyến request, xử lý CORS.
 - **eureka-server** (Port 8761): Service Registry.
-- **monolith-service** (Port 8081): Chứa logic backend nguyên khối cũ (đang bóc tách dần), bao gồm: Auth, Profile, Categories, Products, Cart, Orders, Shipping, Payment callback.
+- **auth-service** (Port 8082): Quản lý Authentication và Profile (Database: `tshop_auth`).
+- **catalog-service** (Port 8083): Quản lý Categories, Products và MinIO Storage (Database: `tshop_catalog`).
+- **order-service** (Port 8084): Quản lý Cart, Orders, Payment (VNPay) và Shipping (GHN) (Database: `tshop_order`).
+- **monolith-service** (Port 8081): Chứa logic cũ chưa chuyển đổi hết (nếu còn).
 
 ## 2. Cau truc code
 
@@ -22,6 +25,9 @@ Hệ thống đang trong quá trình chuyển đổi sang Microservices, bao g�
 Tshop/ (Root POM)
 |-- api-gateway/ (Spring Cloud Gateway)
 |-- eureka-server/ (Service Registry)
+|-- auth-service/ (Auth & Profile)
+|-- catalog-service/ (Products & Categories)
+|-- order-service/ (Cart, Orders, Payment, Shipping)
 |-- monolith-service/ (Legacy Backend)
 |   |-- src/main/java/com/project/tshop/
 |   |   |-- config/
@@ -45,8 +51,9 @@ Tshop/ (Root POM)
 ### Microservices Architecture (Mới)
 - Mọi request từ client sẽ đi qua **API Gateway** (`http://localhost:8080`).
 - Các service tự động đăng ký với **Eureka Server** (`http://localhost:8761`).
-- Gateway dùng tên service trên Eureka (ví dụ `lb://MONOLITH-SERVICE`) để forward request.
-- Các logical database đã được tách ra (`tshop_auth`, `tshop_catalog`, `tshop_order`, `tshop`) để chuẩn bị cho các module mới.
+- Gateway dùng tên service trên Eureka (ví dụ `lb://AUTH-SERVICE`) để forward request.
+- Các logical database đã được tách ra (`tshop_auth`, `tshop_catalog`, `tshop_order`, `tshop`).
+- Các service gọi chéo nhau thông qua REST API (VD: `order-service` gọi `catalog-service` qua `CatalogClient` để lấy thông tin sản phẩm và giá).
 
 ### Layered architecture (Bên trong monolith-service)
 - `controller`: nhan request, validate DTO, tra `ApiResponse`
@@ -279,7 +286,11 @@ spring.config.import=optional:file:./.env[.properties]
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
+- `AUTH_DB` (default: `tshop_auth`)
+- `CATALOG_DB` (default: `tshop_catalog`)
+- `ORDER_DB` (default: `tshop_order`)
 - `JWT_SECRET`
+- `INTERNAL_SECRET` (shared key for inter-service auth via `X-Internal-Secret` header)
 - `MINIO_ENDPOINT`
 - `MINIO_BUCKET`
 - `MINIO_ROOT_USER`
@@ -344,12 +355,20 @@ cd eureka-server
 cd api-gateway
 ..\mvnw.cmd spring-boot:run
 
-# 3. Chạy Monolith Service (Mở tab mới)
-cd monolith-service
+# 3. Chạy Auth Service (Mở tab mới)
+cd auth-service
+..\mvnw.cmd spring-boot:run
+
+# 4. Chạy Catalog Service (Mở tab mới)
+cd catalog-service
+..\mvnw.cmd spring-boot:run
+
+# 5. Chạy Order Service (Mở tab mới)
+cd order-service
 ..\mvnw.cmd spring-boot:run
 ```
 
-Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Monolith chạy ở cổng khác (ví dụ `8081`).
+Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Các microservices chạy ngầm ở các cổng `8082`, `8083`, `8084` v.v.
 
 ## 10. Diem can biet khi mo rong
 
@@ -361,13 +380,22 @@ Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Monolith chạy ở cổng
 
 ## 11. Recent Notes
 
+### Hoàn tất tách Microservices - 2026-05-26
+
+- Đã bóc tách thành công toàn bộ logic của Monolith ra 3 service độc lập: `auth-service`, `catalog-service`, `order-service`.
+- Cập nhật API Gateway để định tuyến đúng các path:
+  - `/api/auth/**`, `/api/profile/**` -> `auth-service`
+  - `/api/products/**`, `/api/categories/**` -> `catalog-service`
+  - `/api/orders/**`, `/api/cart/**`, `/api/payment/**`, `/api/shipping/**` -> `order-service`
+- Chuyển đổi giao tiếp database nguyên khối (JPA `@ManyToOne`) sang giao tiếp qua HTTP API bằng cách dùng `RestClient` (VD: `CatalogClient` trong `order-service`).
+- Áp dụng kiểm tra bảo mật (JWT verify) phân tán tại từng microservice thông qua config chung thay vì tập trung tại một nơi.
+
 ### Khởi tạo kiến trúc Microservices - 2026-05-23
 
 - Chuyển `Tshop` thành Multi-module project.
 - Di chuyển source nguyên khối vào `monolith-service`.
 - Thêm `api-gateway` và cấu hình `eureka-server`.
 - Cập nhật `docker-compose.yml` để mount `postgres-init.sql` tạo nhiều database ảo chuẩn bị cho việc bóc tách (`tshop_auth`, `tshop_catalog`, `tshop_order`).
-- `api-gateway` forward toàn bộ `/api/**` về `monolith-service`.
 
 ### VNPay flow update - 2026-05-13
 
@@ -402,3 +430,23 @@ Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Monolith chạy ở cổng
 - Backend checkout tinh lai cung package summary truoc khi tao order de phi hien thi tren FE va phi luu trong order khong bi lech
 - GHN create order cung dung tong can nang theo so luong item thay vi mac dinh 500g cho ca don
 - Backend khong chan checkout dua tren `shop/all` nua vi GHN fee/create API co the tu lay pickup address tu `ShopId` header.
+
+### Đồng bộ Microservices & Tối ưu hiệu năng - 2026-05-29
+
+- **Chuyển đổi sang UUID v7**: Thay thế toàn bộ `@UuidGenerator` mặc định (UUID v4) bằng `@UuidGenerator(style = UuidGenerator.Style.TIME)` (UUID v7) cho cả **19 JPA Entities** trên tất cả microservices và monolith-service. Sự đổi mới này giúp giảm phân mảnh chỉ mục (index fragmentation) trên database PostgreSQL, cải thiện hiệu năng sắp xếp và ghi dữ liệu, đồng thời bảo toàn kiểu dữ liệu chuẩn `UUID` của Java và database.
+- **Profile stats**: `auth-service` bây giờ lấy `totalOrders` / `totalSpent` từ `order-service` qua internal API `GET /api/internal/orders/stats?userEmail=...` thay vì hardcode `0`. Fallback `0` nếu order-service unreachable.
+- **Catalog seed data**: Đã port seed categories/products/productImages từ `monolith-service/DataInitializer` sang `catalog-service/DataInitializer`. User seeding vẫn ở `auth-service`.
+- **Cancel order**: Endpoint `PUT /api/orders/{orderId}/cancel` là primary (match mono). `POST` giữ lại cho backward compatibility.
+- **Env**: `.env.example` đã bổ sung `AUTH_DB`, `CATALOG_DB`, `ORDER_DB`, `INTERNAL_SECRET`.
+
+### Containerization & Docker Compose Toàn Diện - 2026-05-29
+
+- **Dockerization**: Thiết lập `Dockerfile` tối ưu sử dụng base image `eclipse-temurin:17-jre-alpine` (siêu nhẹ, bảo mật) và copy trực tiếp JAR đóng gói sẵn cho tất cả 5 microservices (`eureka-server`, `api-gateway`, `auth-service`, `catalog-service`, `order-service`).
+- **Docker Compose**: Tối ưu hóa toàn diện `docker-compose.yml` để khởi chạy toàn bộ hệ thống mượt mà chỉ bằng một lệnh duy nhất: `docker compose up -d --build`.
+- **Healthcheck & Khởi chạy tuần tự**: 
+  - Tích hợp Actuator (`spring-boot-starter-actuator`) cho các service.
+  - Bổ sung cấu hình bypass Security cho `/actuator/health` để container tự kiểm tra trạng thái sức khỏe không cần token JWT.
+  - Ràng buộc khởi chạy chặt chẽ qua `depends_on` với `condition: service_healthy` (Postgres -> Eureka & MinIO -> Backend Services -> API Gateway).
+- **Restart Policy**: Cấu hình tự khởi chạy lại tối đa 3 lần (`restart: on-failure:3`) để tránh việc container bị restart vô hạn khi gặp sự cố nghiêm trọng.
+- **Cổng công khai**: Chỉ mở cổng công khai cho API Gateway (`8080`) và Eureka Server (`8761`), đảm bảo tính đóng và bảo mật cho toàn bộ mạng nội bộ microservices.
+
