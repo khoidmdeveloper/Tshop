@@ -5,10 +5,8 @@ import {
   Package,
   ShoppingCart,
   Users,
-  BarChart3,
   Settings,
   LogOut,
-  Boxes
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store";
