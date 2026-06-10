@@ -17,7 +17,6 @@ Hệ thống đã được chuyển đổi sang Microservices Architecture, bao 
 - **auth-service** (Port 8082): Quản lý Authentication và Profile (Database: `tshop_auth`).
 - **catalog-service** (Port 8083): Quản lý Categories, Products và MinIO Storage (Database: `tshop_catalog`).
 - **order-service** (Port 8084): Quản lý Cart, Orders, Payment (VNPay) và Shipping (GHN) (Database: `tshop_order`).
-- **monolith-service** (Port 8081): Chứa logic cũ chưa chuyển đổi hết (nếu còn).
 
 ## 2. Cau truc code
 
@@ -28,7 +27,6 @@ Tshop/ (Root POM)
 |-- auth-service/ (Auth & Profile)
 |-- catalog-service/ (Products & Categories)
 |-- order-service/ (Cart, Orders, Payment, Shipping)
-|-- monolith-service/ (Legacy Backend)
 |   |-- src/main/java/com/project/tshop/
 |   |   |-- config/
 |   |   |-- controller/
@@ -54,14 +52,6 @@ Tshop/ (Root POM)
 - Gateway dùng tên service trên Eureka (ví dụ `lb://AUTH-SERVICE`) để forward request.
 - Các logical database đã được tách ra (`tshop_auth`, `tshop_catalog`, `tshop_order`, `tshop`).
 - Các service gọi chéo nhau thông qua REST API (VD: `order-service` gọi `catalog-service` qua `CatalogClient` để lấy thông tin sản phẩm và giá).
-
-### Layered architecture (Bên trong monolith-service)
-- `controller`: nhan request, validate DTO, tra `ApiResponse`
-- `service`: xu ly nghiep vu
-- `repository`: truy van JPA
-- `entity`: model va quan he
-- `security`: JWT filter, entry point, access denied handler
-- `config`: security, MinIO, seed data, VNPay config
 
 ### Response format
 
@@ -450,3 +440,5 @@ Lưu ý: FE gọi API vào Gateway ở cổng `8080`. Các microservices chạy 
 - **Restart Policy**: Cấu hình tự khởi chạy lại tối đa 3 lần (`restart: on-failure:3`) để tránh việc container bị restart vô hạn khi gặp sự cố nghiêm trọng.
 - **Cổng công khai**: Chỉ mở cổng công khai cho API Gateway (`8080`) và Eureka Server (`8761`), đảm bảo tính đóng và bảo mật cho toàn bộ mạng nội bộ microservices.
 
+### Containerization & Docker Compose Toàn Diện - 2026-06-10
+- Xóa `monolith-service` khỏi project

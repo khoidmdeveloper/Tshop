@@ -32,7 +32,7 @@ build/
 
 ### VS Code ###
 .vscode/
-
+/scan_results
 .serena
 
 # Local env files

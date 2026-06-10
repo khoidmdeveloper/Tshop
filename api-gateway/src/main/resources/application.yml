@@ -35,10 +35,6 @@ spring:
               uri: lb://ORDER-SERVICE
               predicates:
                 - Path=/api/orders,/api/orders/**,/api/cart,/api/cart/**,/api/payment/**,/api/shipping/**
-            - id: monolith-service
-              uri: lb://MONOLITH-SERVICE
-              predicates:
-                - Path=/api/**
 
 eureka:
   client:

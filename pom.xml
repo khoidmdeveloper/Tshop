@@ -20,6 +20,11 @@
         <spring-cloud.version>2025.1.1</spring-cloud.version>
         <jjwt.version>0.12.6</jjwt.version>
         <jackson-datatype-jsr310.version>2.20.1</jackson-datatype-jsr310.version>
+
+        <sonar.host.url>http://localhost:9009</sonar.host.url>
+        <sonar.token>sqp_af9733ee184cdfaf4402aaca77bec339718a6893</sonar.token>
+        <sonar.projectName>Tshop-Microservices-Group</sonar.projectName>
+        <sonar.projectKey>Tshop-Microservices-Group</sonar.projectKey>
     </properties>
 
     <modules>
@@ -29,7 +34,6 @@
         <module>auth-service</module>
         <module>catalog-service</module>
         <module>order-service</module>
-        <module>monolith-service</module>
     </modules>
 
     <dependencyManagement>
